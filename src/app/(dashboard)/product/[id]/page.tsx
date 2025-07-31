@@ -1,0 +1,239 @@
+"use client"
+import React, { useState } from 'react';
+import { useParams, redirect } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, MessageCircle, ShoppingCart, Heart, Share2 } from 'lucide-react';
+import { products } from '@/data/products';
+
+
+export default function ProductDetail() {
+  const { id } = useParams<{ id: string }>();
+
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedQuantity, setSelectedQuantity] = useState(0);
+
+  const product = products.find(p => p.id === id);
+
+  if (!product) {
+    redirect('/products');
+  }
+
+  const handleWhatsAppClick = () => {
+    const selectedOption = product.quantityOptions[selectedQuantity];
+    const message = `Hi! I'm interested in ${product.name} (${selectedOption.type}). Can you please provide more details and confirm the price of ₹${selectedOption.price}?`;
+    const phoneNumber = '919876543210'; // Replace with your actual WhatsApp number
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: product.shortDescription,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+      }
+    } else {
+      // Fallback to copying URL to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      alert('Product URL copied to clipboard!');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb */}
+        <div className="flex items-center space-x-2 text-sm text-gray-500 mb-8">
+          <Link href="/" className="hover:text-purple-600 transition-colors">Home</Link>
+          <span>/</span>
+          <Link href="/products" className="hover:text-purple-600 transition-colors">Products</Link>
+          <span>/</span>
+          <span className="text-gray-900 capitalize">{product.category}</span>
+          <span>/</span>
+          <span className="text-gray-900">{product.name}</span>
+        </div>
+
+        {/* Back Button */}
+        <Link
+          href="/products"
+          className="inline-flex items-center space-x-2 text-gray-600 hover:text-purple-600 transition-colors mb-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Products</span>
+        </Link>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Product Images */}
+          <div className="space-y-4">
+            <div className="aspect-square rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
+              <img
+                src={product.images[selectedImage]}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            {product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedImage === index
+                        ? 'border-purple-600'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Product Information */}
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-start justify-between mb-2">
+                <span className="inline-block bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full capitalize">
+                  {product.category}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleShare}
+                    className="p-2 text-gray-400 hover:text-purple-600 transition-colors"
+                  >
+                    <Share2 className="h-5 w-5" />
+                  </button>
+                  <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                    <Heart className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
+              <p className="text-lg text-gray-600 leading-relaxed">{product.fullDescription}</p>
+            </div>
+
+            {/* Quantity Selection (only for authenticated users) */}
+          
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Quantity & Pricing</h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    {product.quantityOptions.map((option, index) => (
+                      <label
+                        key={index}
+                        className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          selectedQuantity === index
+                            ? 'border-purple-600 bg-purple-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="quantity"
+                            value={index}
+                            checked={selectedQuantity === index}
+                            onChange={() => setSelectedQuantity(index)}
+                            className="sr-only"
+                          />
+                          <div className="space-y-1">
+                            <div className="font-medium text-gray-900">{option.type}</div>
+                            <div className="text-sm text-gray-600">
+                              Minimum order: {option.minOrder} pieces
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-purple-600">₹{option.price}</div>
+                          <div className="text-sm text-gray-500">per piece</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={handleWhatsAppClick}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                    <span>Contact via WhatsApp</span>
+                  </button>
+                  <button className="flex-1 border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    <span>Add to Inquiry</span>
+                  </button>
+                </div>
+              </div>
+         
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-4">
+                <div className="text-amber-800">
+                  <h3 className="font-semibold text-lg mb-2">Login Required</h3>
+                  <p className="text-sm">
+                    Please login to view pricing, quantity options, and place orders.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link
+                    href="/login"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="border border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Register
+                  </Link>
+                </div>
+              </div>
+            
+
+            {/* Product Features */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Key Features</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
+                  Premium quality ingredients
+                </li>
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
+                  Suitable for all skin types
+                </li>
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
+                  Dermatologically tested
+                </li>
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
+                  Wholesale pricing available
+                </li>
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
+                  Fast shipping nationwide
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
