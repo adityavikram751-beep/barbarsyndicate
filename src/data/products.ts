@@ -23,7 +23,7 @@ export const productCategories = [
   {
     id: 'haircare',
     name: 'Haircare', 
-    image: 'https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=400',
+    image: 'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg',
     description: 'Professional hair care solutions'
   },
   {
@@ -48,8 +48,8 @@ export const products: Product[] = [
     shortDescription: 'Brightening vitamin C serum for radiant skin',
     fullDescription: 'Our premium Vitamin C Serum is formulated with 20% L-Ascorbic Acid to brighten skin, reduce dark spots, and provide antioxidant protection. Suitable for all skin types, this lightweight serum absorbs quickly and works effectively to improve skin texture and tone.',
     images: [
-      'https://images.pexels.com/photos/7755607/pexels-photo-7755607.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/3762879/pexels-photo-3762879.jpeg?auto=compress&cs=tinysrgb&w=600'
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg',
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg'
     ],
     quantityOptions: [
       { type: '1 pc', price: 850, minOrder: 1 },
@@ -65,8 +65,8 @@ export const products: Product[] = [
     shortDescription: 'Nourishing shampoo with pure argan oil',
     fullDescription: 'Enriched with premium Moroccan Argan Oil, this sulfate-free shampoo gently cleanses while nourishing and strengthening hair. Perfect for dry, damaged, or chemically treated hair. Leaves hair soft, shiny, and manageable.',
     images: [
-      'https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/4993464/pexels-photo-4993464.jpeg?auto=compress&cs=tinysrgb&w=600'
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg',
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg'
     ],
     quantityOptions: [
       { type: '1 pc', price: 650, minOrder: 1 },
@@ -82,8 +82,8 @@ export const products: Product[] = [
     shortDescription: 'Long-lasting matte liquid lipstick',
     fullDescription: 'Our highly pigmented liquid lipstick delivers intense color with a comfortable matte finish that lasts all day. The lightweight formula glides on smoothly and dries to a transfer-resistant finish. Available in 12 stunning shades.',
     images: [
-      'https://images.pexels.com/photos/2533266/pexels-photo-2533266.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/2787341/pexels-photo-2787341.jpeg?auto=compress&cs=tinysrgb&w=600'
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg',
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg'
     ],
     quantityOptions: [
       { type: '1 pc', price: 450, minOrder: 1 },
@@ -99,8 +99,8 @@ export const products: Product[] = [
     shortDescription: 'Elegant floral fragrance with rose notes',
     fullDescription: 'A sophisticated blend of Bulgarian rose, jasmine, and white musk creates this timeless fragrance. Perfect for the modern woman who appreciates classic elegance. Long-lasting formula with excellent sillage.',
     images: [
-      'https://images.pexels.com/photos/1961795/pexels-photo-1961795.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/3307758/pexels-photo-3307758.jpeg?auto=compress&cs=tinysrgb&w=600'
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg',
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg'
     ],
     quantityOptions: [
       { type: '1 pc', price: 1200, minOrder: 1 },
@@ -116,8 +116,8 @@ export const products: Product[] = [
     shortDescription: 'Deep hydrating moisturizer with hyaluronic acid',
     fullDescription: 'This lightweight yet deeply hydrating moisturizer contains multiple types of hyaluronic acid to provide intense hydration at different skin levels. Suitable for all skin types, it helps maintain skin barrier function and prevents moisture loss.',
     images: [
-      'https://images.pexels.com/photos/7992775/pexels-photo-7992775.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/3785147/pexels-photo-3785147.jpeg?auto=compress&cs=tinysrgb&w=600'
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg',
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg'
     ],
     quantityOptions: [
       { type: '1 pc', price: 950, minOrder: 1 },
@@ -133,8 +133,8 @@ export const products: Product[] = [
     shortDescription: 'Intensive repair mask with keratin protein',
     fullDescription: 'Professional-grade hair mask enriched with keratin protein to repair and strengthen damaged hair. This intensive treatment penetrates deep into the hair shaft to restore elasticity, shine, and manageability. Ideal for chemically treated or heat-damaged hair.',
     images: [
-      'https://images.pexels.com/photos/4465831/pexels-photo-4465831.jpeg?auto=compress&cs=tinysrgb&w=600',
-      'https://images.pexels.com/photos/3997991/pexels-photo-3997991.jpeg?auto=compress&cs=tinysrgb&w=600'
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg',
+      'https://i.pinimg.com/1200x/aa/1b/51/aa1b514a77707d1376397b057b06bfa1.jpg'
     ],
     quantityOptions: [
       { type: '1 pc', price: 750, minOrder: 1 },

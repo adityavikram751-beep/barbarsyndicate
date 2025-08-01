@@ -32,13 +32,14 @@ export default function HomePage() {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  href="/products"
-                  className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <span>Browse Products</span>
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
+              <Link
+  href="/products"
+  className="inline-flex items-center justify-center space-x-2 bg-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+>
+  <span>Browse Products</span>
+  <ArrowRight className="h-5 w-5" />
+</Link>
+
                 <Link
                   href="/register"
                   className="inline-flex items-center justify-center px-8 py-3 border-2 border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-600 hover:text-white transition-all duration-200"

@@ -23,7 +23,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Product Image */}
       <div className="relative overflow-hidden">
         <img
-          src={product.images[0]}
+          src={product.images[1]}
           alt={product.name}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
@@ -74,24 +74,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Pricing (only for authenticated users) */}
       
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Wholesale Pricing
-            </p>
-            <div className="space-y-1">
-              {product.quantityOptions.map((option) => (
-                <div key={option.type} className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">{option.type}:</span>
-                  <span className="font-semibold text-purple-600">₹{option.price}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <p className="text-amber-800 text-xs text-center">
-              <span className="font-medium">Login required</span> to view pricing
-            </p>
-          </div>
+        
         
 
         {/* Actions */}
