@@ -40,12 +40,12 @@ export default function HomePage() {
   <ArrowRight className="h-5 w-5" />
 </Link>
 
-                <Link
+                {/* <Link
                   href="/register"
                   className="inline-flex items-center justify-center px-8 py-3 border-2 border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-600 hover:text-white transition-all duration-200"
                 >
                   Become a Partner
-                </Link>
+                </Link> */}
               </div>
             </div>
             
@@ -160,9 +160,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
             <div className="flex items-center justify-center space-x-2">
-              <Star className="h-6 w-6 text-amber-400 fill-current" />
+              {/* <Star className="h-6 w-6 text-amber-400 fill-current" /> */}
               <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
-              <Star className="h-6 w-6 text-amber-400 fill-current" />
+              {/* <Star className="h-6 w-6 text-amber-400 fill-current" /> */}
             </div>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Discover our most popular wholesale cosmetic products loved by businesses worldwide.
