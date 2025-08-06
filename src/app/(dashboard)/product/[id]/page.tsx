@@ -1,24 +1,111 @@
-"use client"
-import React, { useState } from 'react';
-import { useParams, redirect } from 'next/navigation';
+"use client";
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MessageCircle, ShoppingCart, Heart, Share2 } from 'lucide-react';
-import { products } from '@/data/products';
+import { ArrowLeft, MessageCircle, ShoppingCart, Heart, Share2, Loader } from 'lucide-react';
 
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  shortDescription: string;
+  description: string;
+  quantity: string;
+  isFeature: boolean;
+  carter: number;
+  images: string[];
+  quantityOptions: { type: string; minOrder?: number; price: number }[];
+}
+
+interface ApiProduct {
+  _id: string;
+  name: string;
+  price: number;
+  categoryId: string;
+  description: string;
+  qunatity: string; // API typo
+  isFeature: boolean;
+  carter: number;
+  images: string[];
+  quantityOptions: { type: string; minOrder?: number; price: number }[];
+  __v?: number;
+}
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
-
+  const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedQuantity, setSelectedQuantity] = useState(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const product = products.find(p => p.id === id);
+  const API_URL = `https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product/single/${id}`;
 
-  if (!product) {
-    redirect('/products');
-  }
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+        const response = await fetch(API_URL, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          mode: 'cors',
+          cache: 'no-cache',
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        const data = await response.json();
+
+        if (data.success && data.product) {
+          const apiProduct: ApiProduct = data.product;
+          setProduct({
+            id: apiProduct._id,
+            name: apiProduct.name,
+            price: apiProduct.price,
+            category: apiProduct.categoryId,
+            shortDescription: apiProduct.description,
+            description: apiProduct.description, // Use description as fallback for fullDescription
+            quantity: apiProduct.qunatity,
+            isFeature: apiProduct.isFeature,
+            carter: apiProduct.carter,
+            images: apiProduct.images || ['/placeholder-image.jpg'],
+            quantityOptions: apiProduct.quantityOptions || [
+              { type: 'Default', price: apiProduct.price, minOrder: 1 },
+            ],
+          });
+        } else {
+          throw new Error(data.message || 'Product not found');
+        }
+      } catch (err) {
+        let errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+        if (err instanceof Error && err.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please check your network or try again.';
+        }
+        setError(errorMessage);
+        router.push('/product'); // Redirect to products page on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchProduct();
+    }
+  }, [id, router]);
 
   const handleWhatsAppClick = () => {
+    if (!product) return;
     const selectedOption = product.quantityOptions[selectedQuantity];
     const message = `Hi! I'm interested in ${product.name} (${selectedOption.type}). Can you please provide more details and confirm the price of ₹${selectedOption.price}?`;
     const phoneNumber = '919876543210'; // Replace with your actual WhatsApp number
@@ -27,6 +114,7 @@ export default function ProductDetail() {
   };
 
   const handleShare = async () => {
+    if (!product) return;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -38,11 +126,41 @@ export default function ProductDetail() {
         console.log('Error sharing:', error);
       }
     } else {
-      // Fallback to copying URL to clipboard
       navigator.clipboard.writeText(window.location.href);
       alert('Product URL copied to clipboard!');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600" />
+          <p className="text-gray-600">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-24 h-24 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+            <span className="text-red-400 text-2xl">!</span>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading product</h3>
+          <p className="text-gray-600 mb-4">{error || 'Product not found'}</p>
+          <Link
+            href="/products"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+          >
+            Back to Products
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -72,12 +190,12 @@ export default function ProductDetail() {
           <div className="space-y-4">
             <div className="aspect-square rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200">
               <img
-                src={product.images[selectedImage]}
+                src={product.images[selectedImage] || '/placeholder-image.jpg'}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {product.images.map((image, index) => (
@@ -120,90 +238,89 @@ export default function ProductDetail() {
                   </button>
                 </div>
               </div>
-              
+
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
-              <p className="text-lg text-gray-600 leading-relaxed">{product.fullDescription}</p>
+              <p className="text-lg text-gray-600 leading-relaxed">{product.description}</p>
             </div>
 
-            {/* Quantity Selection (only for authenticated users) */}
-          
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Quantity & Pricing</h3>
-                  <div className="grid grid-cols-1 gap-3">
-                    {product.quantityOptions.map((option, index) => (
-                      <label
-                        key={index}
-                        className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          selectedQuantity === index
-                            ? 'border-purple-600 bg-purple-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            name="quantity"
-                            value={index}
-                            checked={selectedQuantity === index}
-                            onChange={() => setSelectedQuantity(index)}
-                            className="sr-only"
-                          />
-                          <div className="space-y-1">
-                            <div className="font-medium text-gray-900">{option.type}</div>
-                            <div className="text-sm text-gray-600">
-                              Minimum order: {option.minOrder} pieces
-                            </div>
+            {/* Quantity Selection */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Quantity & Pricing</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {product.quantityOptions.map((option, index) => (
+                    <label
+                      key={index}
+                      className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        selectedQuantity === index
+                          ? 'border-purple-600 bg-purple-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          name="quantity"
+                          value={index}
+                          checked={selectedQuantity === index}
+                          onChange={() => setSelectedQuantity(index)}
+                          className="sr-only"
+                        />
+                        <div className="space-y-1">
+                          <div className="font-medium text-gray-900">{option.type}</div>
+                          <div className="text-sm text-gray-600">
+                            Minimum order: {option.minOrder || 1} pieces
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-purple-600">₹{option.price}</div>
-                          <div className="text-sm text-gray-500">per piece</div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-purple-600">₹{option.price.toFixed(2)}</div>
+                        <div className="text-sm text-gray-500">per piece</div>
+                      </div>
+                    </label>
+                  ))}
                 </div>
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    onClick={handleWhatsAppClick}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2"
-                  >
-                    <MessageCircle className="h-5 w-5" />
-                    <span>Contact via WhatsApp</span>
-                  </button>
-                  <button className="flex-1 border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>Add to Inquiry</span>
-                  </button>
-                </div>
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={handleWhatsAppClick}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span>Contact via WhatsApp</span>
+                </button>
+                <button className="flex-1 border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  <span>Add to Inquiry</span>
+                </button>
               </div>
-         
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-4">
-                <div className="text-amber-800">
-                  <h3 className="font-semibold text-lg mb-2">Login Required</h3>
-                  <p className="text-sm">
-                    Please login to view pricing, quantity options, and place orders.
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Link
-                    href="/login"
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="border border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    Register
-                  </Link>
-                </div>
+            </div>
+
+            {/* Login Prompt */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-4">
+              <div className="text-amber-800">
+                <h3 className="font-semibold text-lg mb-2">Login Required</h3>
+                <p className="text-sm">
+                  Please login to view pricing, quantity options, and place orders.
+                </p>
               </div>
-            
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href="/login"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="border border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Register
+                </Link>
+              </div>
+            </div>
 
             {/* Product Features */}
             <div className="bg-gray-50 rounded-xl p-6">

@@ -52,27 +52,28 @@ const LoginUI = () => {
         },
         body: JSON.stringify(payload),
       });
-
+    
       const data = await response.json();
-
+    
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
-
-      setSuccess('Login successful! ');
-      // Reset form
-      setFormData({
-        email: '',
-        password: '',
-      });
-      // Optional: Redirect to dashboard or another page
-      // setTimeout(() => router.push('/dashboard'), 2000);
+    
+      // Log the token to the console
+      console.log('Login successful. Token:', data.token);
+    
+      // Optionally save token to localStorage
+      // localStorage.setItem('token', data.token);
+    
+      setSuccess('Login successful!');
+      setFormData({ email: '', password: '' });
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-amber-50 py-12 px-4 sm:px-6 lg:px-8">

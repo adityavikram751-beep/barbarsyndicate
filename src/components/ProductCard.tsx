@@ -1,16 +1,26 @@
 import React from 'react';
 import Link from 'next/link';
 import { MessageCircle, Eye } from 'lucide-react';
-import { Product } from '@/data/products';
 
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  shortDescription: string;
+  description: string;
+  quantity: string;
+  isFeature: boolean;
+  carter: number;
+  images: string[];
+  quantityOptions: { type: string }[];
+}
 
 interface ProductCardProps {
   product: Product;
-} 
+}
 
 export default function ProductCard({ product }: ProductCardProps) {
-
-
   const handleWhatsAppClick = () => {
     const message = `Hi! I'm interested in ${product.name}. Can you please provide more details?`;
     const phoneNumber = '919876543210'; // Replace with your actual WhatsApp number
@@ -23,7 +33,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Product Image */}
       <div className="relative overflow-hidden">
         <img
-          src={product.images[1]}
+          src={product.images[0] || '/placeholder-image.jpg'} // Use first image or fallback
           alt={product.name}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
@@ -73,9 +83,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Pricing (only for authenticated users) */}
-      
-        
-        
+        <div>
+          <p className="text-gray-900 font-medium">₹{product.price.toFixed(2)}</p>
+        </div>
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
@@ -86,15 +96,13 @@ export default function ProductCard({ product }: ProductCardProps) {
             View Details
           </Link>
           
-        
-            <button
-           
-              className="flex items-center justify-center space-x-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span>WhatsApp</span>
-            </button>
-      
+          <button
+            onClick={handleWhatsAppClick}
+            className="flex items-center justify-center space-x-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span>WhatsApp</span>
+          </button>
         </div>
       </div>
     </div>

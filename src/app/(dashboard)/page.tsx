@@ -1,9 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle, MessageCircle, Truck, FileText, Star } from 'lucide-react';
+import { ArrowRight, CheckCircle, MessageCircle, Truck, FileText } from 'lucide-react';
 import { productCategories, products } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
-
 
 export default function HomePage() {
   const featuredProducts = products.filter(product => product.featured);
@@ -11,7 +10,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-100 via-pink-50 to-amber-50 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-yellow-100 via-red-50 to-orange-50 overflow-hidden">
         <div className="absolute inset-0 bg-white bg-opacity-50" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -19,7 +18,7 @@ export default function HomePage() {
               <div className="space-y-4">
                 <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
                   Premium{' '}
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-red-700 to-yellow-400 bg-clip-text text-transparent">
                     Wholesale
                   </span>{' '}
                   Cosmetics
@@ -30,19 +29,18 @@ export default function HomePage() {
                   with premium cosmetics.
                 </p>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-  href="/products"
-  className="inline-flex items-center justify-center space-x-2 bg-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
->
-  <span>Browse Products</span>
-  <ArrowRight className="h-5 w-5" />
-</Link>
 
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/products"
+                  className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-red-700 to-yellow-400 text-white px-8 py-3 rounded-lg font-semibold hover:brightness-110 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <span>Browse Products</span>
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
               </div>
             </div>
-            
+
             <div className="relative">
               <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
                 <img
@@ -53,8 +51,8 @@ export default function HomePage() {
               </div>
               <div className="absolute -bottom-6 -left-6 bg-white rounded-xl shadow-lg p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="bg-green-100 p-2 rounded-lg">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  <div className="bg-yellow-100 p-2 rounded-lg">
+                    <CheckCircle className="h-6 w-6 text-yellow-500" />
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">500+ Products</p>
@@ -71,15 +69,15 @@ export default function HomePage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">Why Choose CosmeticHub?</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Why Choose Barber Syndicate?</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               We make wholesale cosmetics procurement simple, reliable, and profitable for your business.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center space-y-4 p-6 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100">
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+            <div className="text-center space-y-4 p-6 rounded-xl bg-gradient-to-br from-red-50 to-yellow-50 border border-yellow-200">
+              <div className="bg-gradient-to-r from-red-700 to-yellow-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
                 <Truck className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900">Bulk Pricing</h3>
@@ -88,9 +86,9 @@ export default function HomePage() {
                 Maximize your profit margins with competitive pricing.
               </p>
             </div>
-            
-            <div className="text-center space-y-4 p-6 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+
+            <div className="text-center space-y-4 p-6 rounded-xl bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200">
+              <div className="bg-gradient-to-r from-yellow-500 to-orange-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
                 <FileText className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900">GST Invoices</h3>
@@ -99,9 +97,9 @@ export default function HomePage() {
                 Maintain proper business records and tax compliance.
               </p>
             </div>
-            
-            <div className="text-center space-y-4 p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+
+            <div className="text-center space-y-4 p-6 rounded-xl bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-100">
+              <div className="bg-gradient-to-r from-red-600 to-yellow-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
                 <MessageCircle className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900">WhatsApp Support</h3>
@@ -123,7 +121,7 @@ export default function HomePage() {
               Explore our comprehensive range of cosmetic products across multiple categories.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {productCategories.map((category) => (
               <Link
@@ -153,26 +151,22 @@ export default function HomePage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 mb-12">
-            <div className="flex items-center justify-center space-x-2">
-              {/* <Star className="h-6 w-6 text-amber-400 fill-current" /> */}
-              <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
-              {/* <Star className="h-6 w-6 text-amber-400 fill-current" /> */}
-            </div>
+            <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Discover our most popular wholesale cosmetic products loved by businesses worldwide.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredProducts.map((product) => (
+            {/* {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
-            ))}
+            ))} */}
           </div>
-          
+
           <div className="text-center mt-12">
             <Link
-              href="/products"
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              href="/product"
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-red-700 to-yellow-400 text-white px-8 py-3 rounded-lg font-semibold hover:brightness-110 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <span>View All Products</span>
               <ArrowRight className="h-5 w-5" />
@@ -182,19 +176,19 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-purple-600 to-pink-600">
+      <section className="py-16 bg-gradient-to-r from-red-700 to-yellow-400">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
             <h2 className="text-3xl font-bold text-white">
               Ready to Start Your Wholesale Journey?
             </h2>
-            <p className="text-xl text-purple-100">
-              Join thousands of satisfied businesses who trust CosmeticHub for their cosmetic needs.
+            <p className="text-xl text-white">
+              Join thousands of satisfied businesses who trust Barber Syndicate for their cosmetic needs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/register"
-                className="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
+                className="bg-white text-red-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200"
               >
                 Register Now
               </Link>
@@ -202,7 +196,7 @@ export default function HomePage() {
                 href="https://wa.me/919876543210?text=Hi! I'm interested in wholesale cosmetics. Can you help me get started?"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-purple-600 transition-all duration-200"
+                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-red-700 transition-all duration-200"
               >
                 Contact Us
               </a>
