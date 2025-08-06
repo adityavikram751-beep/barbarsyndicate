@@ -1,27 +1,32 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { Menu, X, User, LogOut, ShoppingBag } from 'lucide-react';
+import Image from 'next/image';
+import { Menu, X, User, LogOut } from 'lucide-react';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
-  // Placeholder for auth logic
-  const loggedIn = false; // Change this to true if user is logged in
+  const loggedIn = false;
 
   const isActive = (path: string) => false;
 
   return (
-    <header className="bg-white shadow-sm border-b border-purple-100 sticky top-0 z-50">
+    <header className="bg-white shadow-sm border-b border-yellow-400 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="bg-gradient-to-r from-purple-400 to-pink-400 p-2 rounded-lg">
-              <ShoppingBag className="h-6 w-6 text-white" />
+            <div className="p-1 rounded-lg">
+              <Image
+                src="/logo.png" // Put the image in public/logo.png
+                alt="Barber Syndicate Logo"
+                width={80}
+                height={50}
+              />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              CosmeticHub
+            <span className="text-xl font-bold text-red-700">
+              Barber Syndicate
             </span>
           </Link>
 
@@ -29,23 +34,23 @@ export default function Header() {
           <nav className="hidden md:flex items-center space-x-8">
             <Link
               href="/"
-              className={`text-sm font-medium transition-colors hover:text-purple-600 ${
-                isActive('/') ? 'text-purple-600' : 'text-gray-700'
+              className={`text-sm font-medium transition-colors hover:text-red-700 ${
+                isActive('/') ? 'text-red-700' : 'text-gray-700'
               }`}
             >
               Home
             </Link>
             <Link
               href="/products"
-              className={`text-sm font-medium transition-colors hover:text-purple-600 ${
-                isActive('/products') ? 'text-purple-600' : 'text-gray-700'
+              className={`text-sm font-medium transition-colors hover:text-red-700 ${
+                isActive('/products') ? 'text-red-700' : 'text-gray-700'
               }`}
             >
               Products
             </Link>
             <Link
               href="/contact"
-              className="text-sm font-medium transition-colors hover:text-purple-600"
+              className="text-sm font-medium transition-colors hover:text-red-700 text-gray-700"
             >
               Contact
             </Link>
@@ -68,24 +73,23 @@ export default function Header() {
               <div className="flex items-center space-x-3">
                 <Link
                   href="/login"
-                  className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors"
+                  className="text-sm font-medium text-gray-700 hover:text-red-700 transition-colors"
                 >
                   Login
                 </Link>
-             <Link
-  href="/register"
-  className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
->
-  Register
-</Link>
-
+                <Link
+                  href="/register"
+                  className="bg-gradient-to-r from-red-700 to-yellow-400 text-white px-4 py-2 rounded-lg text-sm font-medium hover:brightness-105 transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  Register
+                </Link>
               </div>
             )}
           </div>
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden p-2 rounded-md text-gray-600 hover:text-purple-600 hover:bg-gray-50"
+            className="md:hidden p-2 rounded-md text-gray-600 hover:text-red-700 hover:bg-gray-50"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -94,12 +98,12 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100">
+          <div className="md:hidden py-4 border-t border-yellow-100">
             <nav className="flex flex-col space-y-3">
               <Link
                 href="/"
-                className={`px-3 py-2 text-sm font-medium transition-colors hover:text-purple-600 ${
-                  isActive('/') ? 'text-purple-600 bg-purple-50' : 'text-gray-700'
+                className={`px-3 py-2 text-sm font-medium transition-colors hover:text-red-700 ${
+                  isActive('/') ? 'text-red-700 bg-yellow-100' : 'text-gray-700'
                 } rounded-md`}
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -107,8 +111,8 @@ export default function Header() {
               </Link>
               <Link
                 href="/products"
-                className={`px-3 py-2 text-sm font-medium transition-colors hover:text-purple-600 ${
-                  isActive('/products') ? 'text-purple-600 bg-purple-50' : 'text-gray-700'
+                className={`px-3 py-2 text-sm font-medium transition-colors hover:text-red-700 ${
+                  isActive('/products') ? 'text-red-700 bg-yellow-100' : 'text-gray-700'
                 } rounded-md`}
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -116,21 +120,21 @@ export default function Header() {
               </Link>
               <Link
                 href="/contact"
-                className={`px-3 py-2 text-sm font-medium transition-colors hover:text-purple-600 ${
-                  isActive('/contact') ? 'text-purple-600 bg-purple-50' : 'text-gray-700'
+                className={`px-3 py-2 text-sm font-medium transition-colors hover:text-red-700 ${
+                  isActive('/contact') ? 'text-red-700 bg-yellow-100' : 'text-gray-700'
                 } rounded-md`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Contact
               </Link>
 
-              <div className="pt-3 border-t border-gray-100">
+              <div className="pt-3 border-t border-yellow-100">
                 {loggedIn ? (
                   <div className="space-y-3">
                     <div className="px-3 py-2 text-sm text-gray-700 bg-gray-50 rounded-md">
                       Welcome
                     </div>
-                    <button className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                    <button className="w-full text-left px-3 py-2 text-sm text-red-700 hover:bg-red-100 rounded-md transition-colors">
                       Logout
                     </button>
                   </div>
@@ -138,14 +142,14 @@ export default function Header() {
                   <div className="space-y-2">
                     <Link
                       href="/login"
-                      className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+                      className="block px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-700 hover:bg-yellow-100 rounded-md transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Login
                     </Link>
                     <Link
                       href="/register"
-                      className="block px-3 py-2 text-sm font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md text-center"
+                      className="block px-3 py-2 text-sm font-medium bg-gradient-to-r from-red-700 to-yellow-400 text-white rounded-md text-center"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Register

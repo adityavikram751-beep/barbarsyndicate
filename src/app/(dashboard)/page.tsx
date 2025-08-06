@@ -40,12 +40,6 @@ export default function HomePage() {
   <ArrowRight className="h-5 w-5" />
 </Link>
 
-                {/* <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center px-8 py-3 border-2 border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-600 hover:text-white transition-all duration-200"
-                >
-                  Become a Partner
-                </Link> */}
               </div>
             </div>
             

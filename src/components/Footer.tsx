@@ -12,7 +12,7 @@ export default function Footer() {
               <div className="bg-gradient-to-r from-purple-400 to-pink-400 p-2 rounded-lg">
                 <ShoppingBag className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold">CosmeticHub</span>
+              <span className="text-xl font-bold">Barber Syndicate</span>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">
               Your trusted partner for wholesale cosmetics. We provide premium quality beauty products 
@@ -98,7 +98,7 @@ export default function Footer() {
                 <MapPin className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-gray-300">
                   <p>123 Business District,</p>
-                  <p>Mumbai, Maharashtra 400001</p>
+                  <p>3846 Main Market Mori Gate Delhi</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
@@ -107,7 +107,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-purple-400 flex-shrink-0" />
-                <span className="text-sm text-gray-300">info@cosmetichub.com</span>
+                <span className="text-sm text-gray-300">info@BarberSyndicate.com</span>
               </div>
             </div>
           </div>
@@ -116,7 +116,7 @@ export default function Footer() {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-sm text-gray-400">
-              © 2024 CosmeticHub. All rights reserved.
+              © 2025 Barber Syndicate. All rights reserved.
             </p>
             <div className="flex items-center space-x-6 text-sm text-gray-400">
               <span>GST: 07AABCU9603R1ZX</span>
