@@ -178,7 +178,7 @@ export default function ProductDetail() {
 
         {/* Back Button */}
         <Link
-          href="/products"
+          href="/product"
           className="inline-flex items-center space-x-2 text-gray-600 hover:text-purple-600 transition-colors mb-8"
         >
           <ArrowLeft className="h-4 w-4" />
