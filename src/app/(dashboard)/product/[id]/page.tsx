@@ -40,10 +40,17 @@ export default function ProductDetail() {
   const [selectedQuantity, setSelectedQuantity] = useState(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  // Add authentication state (simplified for this example)
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Replace with actual auth check
 
   const API_URL = `https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product/single/${id}`;
 
   useEffect(() => {
+    // Simulate checking authentication status (replace with your auth logic)
+    // For example, check a token in localStorage or use an auth library
+    const token = localStorage.getItem('authToken');
+    setIsAuthenticated(!!token);
+
     const fetchProduct = async () => {
       try {
         setLoading(true);
@@ -75,7 +82,7 @@ export default function ProductDetail() {
             price: apiProduct.price,
             category: apiProduct.categoryId,
             shortDescription: apiProduct.description,
-            description: apiProduct.description, // Use description as fallback for fullDescription
+            description: apiProduct.description,
             quantity: apiProduct.qunatity,
             isFeature: apiProduct.isFeature,
             carter: apiProduct.carter,
@@ -93,7 +100,7 @@ export default function ProductDetail() {
           errorMessage = 'Request timed out. Please check your network or try again.';
         }
         setError(errorMessage);
-        router.push('/product'); // Redirect to products page on error
+        router.push('/product');
       } finally {
         setLoading(false);
       }
@@ -107,10 +114,10 @@ export default function ProductDetail() {
   const handleWhatsAppClick = () => {
     if (!product) return;
     const selectedOption = product.quantityOptions[selectedQuantity];
-    const message = `Hi! I'm interested in ${product.name} (${selectedOption.type}). Can you please provide more details and confirm the price of ₹${selectedOption.price}?`;
-    const phoneNumber = '919876543210'; // Replace with your actual WhatsApp number
+    const message = `Hi! I'm interested in ${product.name} (${selectedOption.type}). Can you please provide more details${isAuthenticated ? ` and confirm the price of ₹${selectedOption.price}?` : '?'}`;
+    const phoneNumber = '919876543210';
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    window.open(url, '_blank baiser');
   };
 
   const handleShare = async () => {
@@ -224,7 +231,7 @@ export default function ProductDetail() {
             <div>
               <div className="flex items-start justify-between mb-2">
                 <span className="inline-block bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full capitalize">
-                  {product.category}
+ either: {product.category}
                 </span>
                 <div className="flex items-center space-x-2">
                   <button
@@ -274,7 +281,13 @@ export default function ProductDetail() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-purple-600">₹{option.price.toFixed(2)}</div>
+                        <div
+                          className={`text-lg font-bold text-purple-600 ${
+                            !isAuthenticated ? 'blur-sm select-none' : ''
+                          }`}
+                        >
+                          {isAuthenticated ? `₹${option.price.toFixed(2)}` : 'Login to view price'}
+                        </div>
                         <div className="text-sm text-gray-500">per piece</div>
                       </div>
                     </label>
@@ -287,11 +300,15 @@ export default function ProductDetail() {
                 <button
                   onClick={handleWhatsAppClick}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2"
+                  disabled={!isAuthenticated} // Disable if not authenticated
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span>Contact via WhatsApp</span>
                 </button>
-                <button className="flex-1 border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2">
+                <button
+                  className="flex-1 border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2"
+                  disabled={!isAuthenticated} // Disable if not authenticated
+                >
                   <ShoppingCart className="h-5 w-5" />
                   <span>Add to Inquiry</span>
                 </button>
@@ -299,28 +316,30 @@ export default function ProductDetail() {
             </div>
 
             {/* Login Prompt */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-4">
-              <div className="text-amber-800">
-                <h3 className="font-semibold text-lg mb-2">Login Required</h3>
-                <p className="text-sm">
-                  Please login to view pricing, quantity options, and place orders.
-                </p>
+            {!isAuthenticated && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-4">
+                <div className="text-amber-800">
+                  <h3 className="font-semibold text-lg mb-2">Login Required</h3>
+                  <p className="text-sm">
+                    Please login to view pricing, quantity options, and place orders.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link
+                    href="/login"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="border border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Register
+                  </Link>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  href="/login"
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="border border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Register
-                </Link>
-              </div>
-            </div>
+            )}
 
             {/* Product Features */}
             <div className="bg-gray-50 rounded-xl p-6">
@@ -351,6 +370,7 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+  
   );
 }

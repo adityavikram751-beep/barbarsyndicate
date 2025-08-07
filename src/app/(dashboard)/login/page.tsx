@@ -62,8 +62,7 @@ const LoginUI = () => {
       // Log the token to the console
       console.log('Login successful. Token:', data.token);
     
-      // Optionally save token to localStorage
-      // localStorage.setItem('token', data.token);
+    localStorage.setItem('token', data.token);
     
       setSuccess('Login successful!');
       setFormData({ email: '', password: '' });

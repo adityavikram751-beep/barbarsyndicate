@@ -21,12 +21,6 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const handleWhatsAppClick = () => {
-    const message = `Hi! I'm interested in ${product.name}. Can you please provide more details?`;
-    const phoneNumber = '919876543210'; // Replace with your actual WhatsApp number
-    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 group">
@@ -65,27 +59,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           </p>
         </div>
 
-        {/* Quantity Options */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Available Quantities
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {product.quantityOptions.map((option) => (
-              <span
-                key={option.type}
-                className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
-              >
-                {option.type}
-              </span>
-            ))}
-          </div>
-        </div>
+     
 
-        {/* Pricing (only for authenticated users) */}
-        <div>
-          <p className="text-gray-900 font-medium">₹{product.price.toFixed(2)}</p>
-        </div>
+    
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
@@ -96,13 +72,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             View Details
           </Link>
           
-          <button
-            onClick={handleWhatsAppClick}
-            className="flex items-center justify-center space-x-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-          >
-            <MessageCircle className="h-4 w-4" />
-            <span>WhatsApp</span>
-          </button>
+        
         </div>
       </div>
     </div>
