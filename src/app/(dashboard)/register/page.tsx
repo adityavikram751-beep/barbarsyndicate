@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
-import api from '@/lib/axios';
 
 const RegisterUI = () => {
   const [formData, setFormData] = useState({
@@ -29,20 +28,20 @@ const RegisterUI = () => {
     setError('');
     setSuccess('');
     setIsLoading(true);
-  
+
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
-  
+
     if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.address) {
       setError('Please fill in all required fields');
       setIsLoading(false);
       return;
     }
-  
+
     const payload = {
       name: formData.name,
       email: formData.email,
@@ -51,17 +50,29 @@ const RegisterUI = () => {
       gstnumber: formData.gstnumber || undefined,
       address: formData.address,
     };
-  
+
     try {
-      const response = await api.post('/user/signup', payload); // Corrected typo: 'singup' -> 'signup'
-      const { token } = response.data;
-  
-      // Save token to localStorage
-      if (token) {
-        localStorage.setItem('token', token);
-        console.log('Registration successful. Token saved:', token); // Added console log for token
+      const res = await fetch(
+        'https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/user/singup',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.message || 'Failed to register');
       }
-  
+
+      // Save token to localStorage if provided
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        console.log('Registration successful. Token saved:', data.token);
+      }
+
       setSuccess('Registration successful! Awaiting admin approval.');
       setFormData({
         name: '',
@@ -73,7 +84,7 @@ const RegisterUI = () => {
         address: '',
       });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +119,9 @@ const RegisterUI = () => {
               </div>
             )}
 
+            {/* Form */}
             <form className="space-y-6" onSubmit={handleSubmit}>
+              {/* Full Name and Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -142,6 +155,7 @@ const RegisterUI = () => {
                 </div>
               </div>
 
+              {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address *
@@ -158,6 +172,7 @@ const RegisterUI = () => {
                 />
               </div>
 
+              {/* Address */}
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
                   Business Address *
@@ -174,6 +189,7 @@ const RegisterUI = () => {
                 />
               </div>
 
+              {/* GST Number */}
               <div>
                 <label htmlFor="gstnumber" className="block text-sm font-medium text-gray-700 mb-2">
                   GST Number
@@ -192,6 +208,7 @@ const RegisterUI = () => {
                 </p>
               </div>
 
+              {/* Password and Confirm Password */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -226,13 +243,14 @@ const RegisterUI = () => {
                 </div>
               </div>
 
+              {/* Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-blue-800 text-sm">
-                  <strong>Admin Approval Required:</strong> After registration,
-                  your account will be reviewed and approved by our team.
+                  <strong>Admin Approval Required:</strong> After registration, your account will be reviewed and approved by our team.
                 </p>
               </div>
 
+              {/* Submit */}
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
@@ -242,6 +260,7 @@ const RegisterUI = () => {
               </button>
             </form>
 
+            {/* Sign in link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}

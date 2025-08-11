@@ -1,8 +1,13 @@
 "use client";
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, Grid, List, Loader } from 'lucide-react';
-import ProductCard from '@/components/ProductCard';
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useMemo, useEffect } from "react";
+import { Search, Filter, Grid, List, Loader } from "lucide-react";
+import ProductCard from "@/components/ProductCard";
+import { useSearchParams } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
 
 export interface Product {
   id: string;
@@ -14,8 +19,8 @@ export interface Product {
   quantity: string;
   isFeature: boolean;
   carter: number;
-  images: string[]; // Added images field
-  quantityOptions: { type: string }[]; // Added quantityOptions field
+  images: string[];
+  quantityOptions: { type: string }[];
 }
 
 interface ApiProduct {
@@ -24,12 +29,11 @@ interface ApiProduct {
   price: number;
   categoryId: string;
   description: string;
-  qunatity: string; // Note: typo in API response, should be 'quantity'
+  qunatity: string;
   isFeature: boolean;
   carter: number;
-  images: string[]; // Added images field
-  quantityOptions: { type: string }[]; // Added quantityOptions field
-  __v?: number;
+  images: string[];
+  quantityOptions: { type: string }[];
 }
 
 interface ApiResponse {
@@ -48,9 +52,11 @@ interface Category {
 
 export default function ProductCatalog() {
   const searchParams = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
-  const [viewMode, setViewMode] = useState('grid');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(
+    searchParams.get("category") || "all"
+  );
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -59,8 +65,12 @@ export default function ProductCatalog() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalResults, setTotalResults] = useState<number>(0);
 
-  const API_URL = 'https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product';
+  const PRODUCT_API_URL =
+    "https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product";
+  const CATEGORY_API_URL =
+    "https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/category";
 
+  // Fetch products
   const fetchProducts = async (page = 1, retryCount = 0) => {
     const maxRetries = 2;
     try {
@@ -68,16 +78,14 @@ export default function ProductCatalog() {
       setError(null);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`${API_URL}?page=${page}`, {
-        method: 'GET',
+      const response = await fetch(`${PRODUCT_API_URL}?page=${page}`, {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        mode: 'cors',
-        cache: 'no-cache',
         signal: controller.signal,
       });
 
@@ -90,29 +98,17 @@ export default function ProductCatalog() {
         setCurrentPage(data.currentPage || 1);
         setTotalPages(data.totalPages || 1);
         setTotalResults(data.totalResults || 0);
-
-        const uniqueCategories = [...new Set(data.products.map((product: ApiProduct) => product.categoryId))];
-        setCategories(uniqueCategories.map(id => ({
-          id,
-          name: `Category ${id.slice(-4)}`, // Placeholder; replace with actual names if available
-        })));
       } else {
-        throw new Error(data.message || 'Failed to fetch products');
+        throw new Error(data.message || "Failed to fetch products");
       }
     } catch (err) {
-      let errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      if (err instanceof Error && err.name === 'AbortError') {
-        errorMessage = 'Request timed out. Please check your network or try again.';
+      let errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred";
+      if (err instanceof Error && err.name === "AbortError") {
+        errorMessage = "Request timed out.";
       }
 
-      console.error('Error fetching products:', {
-        error: err,
-        url: `${API_URL}?page=${page}`,
-        retryCount,
-      });
-
       if (retryCount < maxRetries) {
-        console.log(`Retrying fetch (attempt ${retryCount + 1}/${maxRetries})...`);
         return fetchProducts(page, retryCount + 1);
       }
 
@@ -122,32 +118,55 @@ export default function ProductCatalog() {
     }
   };
 
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(CATEGORY_API_URL);
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        setCategories(
+          data.data.map((cat: any) => ({
+            id: cat._id,
+            name: cat.categoryname,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Error fetching categories", err);
+    }
+  };
+
   useEffect(() => {
-    setSelectedCategory(searchParams.get('category') || 'all');
+    setSelectedCategory(searchParams.get("category") || "all");
     fetchProducts();
+    fetchCategories();
   }, [searchParams]);
 
   const transformedProducts = useMemo(() => {
-    return products.map(product => ({
+    return products.map((product) => ({
       id: product._id,
       name: product.name,
       price: product.price,
       category: product.categoryId,
       shortDescription: product.description,
       description: product.description,
-      quantity: product.qunatity, // Note: typo in API field name
+      quantity: product.qunatity,
       isFeature: product.isFeature,
       carter: product.carter,
-      images: product.images || ['/placeholder-image.jpg'], // Fallback image if API doesn't provide
-      quantityOptions: product.quantityOptions || [{ type: 'Default' }], // Fallback quantity option
+      images: product.images || ["/placeholder-image.jpg"],
+      quantityOptions: product.quantityOptions || [{ type: "Default" }],
     }));
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    return transformedProducts.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.shortDescription.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    return transformedProducts.filter((product) => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.shortDescription
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "all" || product.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
   }, [transformedProducts, searchTerm, selectedCategory]);
@@ -155,7 +174,7 @@ export default function ProductCatalog() {
   const handlePageChange = (page: number) => {
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       fetchProducts(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -177,14 +196,16 @@ export default function ProductCatalog() {
           <div className="w-24 h-24 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
             <Search className="h-8 w-8 text-red-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading products</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Error loading products
+          </h3>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
+          <Button
             onClick={() => fetchProducts()}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+            className="bg-purple-600 hover:bg-purple-700"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -192,183 +213,216 @@ export default function ProductCatalog() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-3xl font-bold text-gray-900">Product Catalog</h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Discover our extensive collection of premium wholesale cosmetic products
-            </p>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Product Catalog
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Discover our extensive collection of premium wholesale cosmetic
+            products
+          </p>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          <div className="lg:w-64 space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                <Filter className="h-5 w-5 mr-2" />
-                Filters
-              </h3>
-              
-              <div className="space-y-2 mb-6">
-                <label className="text-sm font-medium text-gray-700">Search Products</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
+          {/* Sidebar Filters */}
+          <div className="lg:w-80">
+            <Card className="sticky top-8">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <Filter className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Filters
+                  </h3>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Categories</label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="category"
-                      value="all"
-                      checked={selectedCategory === 'all'}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                {/* Search */}
+                <div className="mb-8">
+                  <Label
+                    htmlFor="search"
+                    className="text-sm font-medium text-gray-700 mb-3 block"
+                  >
+                    Search Products
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="search"
+                      placeholder="Search products..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
                     />
-                    <span className="ml-2 text-sm text-gray-700">All Categories</span>
-                  </label>
-                  {categories.map((category) => (
-                    <label key={category.id} className="flex items-center">
-                      <input
-                        type="radio"
-                        name="category"
-                        value={category.id}
-                        checked={selectedCategory === category.id}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700 capitalize">{category.name}</span>
-                    </label>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                {/* Categories */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                    Categories
+                  </Label>
+                  <RadioGroup
+                    value={selectedCategory}
+                    onValueChange={setSelectedCategory}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem
+                        value="all"
+                        id="all"
+                        className="text-purple-600"
+                      />
+                      <Label
+                        htmlFor="all"
+                        className="text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors"
+                      >
+                        All Categories
+                      </Label>
+                    </div>
+                    {categories.map((category) => (
+                      <div key={category.id} className="flex items-center space-x-3">
+                        <RadioGroupItem
+                          value={category.id}
+                          id={category.id}
+                          className="text-purple-600"
+                        />
+                        <Label
+                          htmlFor={category.id}
+                          className="text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors capitalize"
+                        >
+                          {category.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
+          {/* Main Content */}
           <div className="flex-1">
+            {/* Controls Bar */}
             {loading && products.length > 0 && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-center">
                 <Loader className="h-4 w-4 animate-spin mr-2 text-blue-600" />
-                <span className="text-blue-700 text-sm">Loading products...</span>
+                <span className="text-blue-700 text-sm">
+                  Loading products...
+                </span>
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-              <div>
-                <p className="text-gray-600">
-                  Showing {filteredProducts.length} of {totalResults} products
-                  {selectedCategory !== 'all' && (
-                    <span className="ml-1">
-                      in <span className="capitalize font-medium">{categories.find(c => c.id === selectedCategory)?.name || selectedCategory}</span>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+              <p className="text-sm text-gray-600">
+                Showing {filteredProducts.length} of {totalResults} products
+                {selectedCategory !== "all" && (
+                  <span className="ml-1">
+                    in{" "}
+                    <span className="capitalize font-medium">
+                      {categories.find((c) => c.id === selectedCategory)?.name ||
+                        selectedCategory}
                     </span>
-                  )}
-                </p>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">View:</span>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-purple-100 text-purple-600'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  <Grid className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-purple-100 text-purple-600'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  <List className="h-4 w-4" />
-                </button>
+                  </span>
+                )}
+              </p>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 mr-2">View:</span>
+                <div className="flex border rounded-lg overflow-hidden">
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("grid")}
+                    className="rounded-none border-r"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("list")}
+                    className="rounded-none"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
-            {filteredProducts.length > 0 ? (
+            {/* Products Grid/List */}
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No products found
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Try adjusting your search or filter criteria
+                </p>
+                <Button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedCategory("all");
+                  }}
+                  variant="outline"
+                  className="text-purple-600 border-purple-600 hover:bg-purple-50"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            ) : (
               <>
-                <div className={`grid gap-3 ${
-                  viewMode === 'grid'
-                    ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
-                    : 'grid-cols-1'
-                }`}>
+                <div
+                  className={
+                    viewMode === "grid"
+                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                      : "space-y-4"
+                  }
+                >
                   {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      viewMode={viewMode}
+                    />
                   ))}
                 </div>
 
                 {totalPages > 1 && filteredProducts.length > 0 && (
                   <div className="flex items-center justify-center space-x-2 mt-8">
-                    <button
+                    <Button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1 || loading}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      variant="outline"
                     >
                       Previous
-                    </button>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        disabled={loading}
-                        className={`px-3 py-2 border rounded-md text-sm font-medium ${
-                          currentPage === page
-                            ? 'border-purple-500 bg-purple-50 text-purple-600'
-                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                    
-                    <button
+                    </Button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <Button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          disabled={loading}
+                          variant={
+                            currentPage === page ? "default" : "outline"
+                          }
+                        >
+                          {page}
+                        </Button>
+                      )
+                    )}
+
+                    <Button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages || loading}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      variant="outline"
                     >
                       Next
-                    </button>
+                    </Button>
                   </div>
                 )}
               </>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Search className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-                <p className="text-gray-600 mb-4">
-                  Try adjusting your search or filter criteria to find what you're looking for.
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCategory('all');
-                  }}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-purple-600 bg-purple-100 hover:bg-purple-200 transition-colors"
-                >
-                  Clear Filters
-                </button>
-              </div>
             )}
           </div>
         </div>

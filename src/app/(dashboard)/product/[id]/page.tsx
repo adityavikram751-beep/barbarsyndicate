@@ -63,7 +63,7 @@ export default function ProductDetail() {
   const API_URL = `https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product/single/${id}`;
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('token');
     setIsAuthenticated(!!token);
 
     const fetchProduct = async () => {
@@ -372,34 +372,11 @@ export default function ProductDetail() {
                 </div>
               </div>
             )}
-            {/* Product Features */}
-            <div className="bg-gray-50 rounded-xl p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Key Features</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-center">
-                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
-                  Premium quality ingredients
-                </li>
-                <li className="flex items-center">
-                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
-                  Suitable for all skin types
-                </li>
-                <li className="flex items-center">
-                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
-                  Dermatologically tested
-                </li>
-                <li className="flex items-center">
-                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
-                  Wholesale pricing available
-                </li>
-                <li className="flex items-center">
-                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-3"></span>
-                  Fast shipping nationwide
-                </li>
-              </ul>
-            </div>
-          </div>
+           
+           
         </div>
+        </div>
+        
         {/* Similar Products Section */}
         {similarProducts.length > 0 && (
           <div className="mt-12">

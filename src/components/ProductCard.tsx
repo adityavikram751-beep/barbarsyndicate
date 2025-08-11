@@ -1,6 +1,11 @@
-import React from 'react';
+'use client';
+
 import Link from 'next/link';
-import { MessageCircle, Eye } from 'lucide-react';
+import { Heart, Eye, ShoppingCart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 
 export interface Product {
   id: string;
@@ -14,67 +19,112 @@ export interface Product {
   carter: number;
   images: string[];
   quantityOptions: { type: string }[];
+  originalPrice?: number;
+  inStock?: boolean;
 }
 
 interface ProductCardProps {
   product: Product;
+  viewMode?: 'grid' | 'list';
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, viewMode = 'grid' }: ProductCardProps) {
+  const { id, name, price, category, shortDescription, images, originalPrice, inStock } = product;
+  const imageUrl = images?.[0] || '/placeholder-image.jpg';
+  const hasDiscount = !!(originalPrice && originalPrice > price);
+  const discountPercent = hasDiscount ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+
+  const PriceTag = () => (
+    <div className="flex items-center space-x-2">
+      <span className="text-lg font-bold text-gray-900">₹{price}</span>
+      {hasDiscount && (
+        <span className="text-sm text-gray-500 line-through">₹{originalPrice}</span>
+      )}
+    </div>
+  );
+
+  const ActionButtons = ({ compact = false }: { compact?: boolean }) => (
+    <>
+      <Button variant="outline" size="sm" className="hover:text-red-500">
+        <Heart className="h-4 w-4" />
+      </Button>
+      <Link href={`/product/${id}`}>
+        <Button variant="outline" size="sm" className="hover:text-orange-500">
+          <Eye className="h-4 w-4" />
+        </Button>
+      </Link>
+      {!compact && (
+        <Button
+          size="sm"
+          disabled={inStock === false}
+          className="bg-orange-500 hover:bg-orange-600 text-white disabled:bg-gray-300"
+        >
+          <ShoppingCart className="h-4 w-4 mr-1" /> Add to Cart
+        </Button>
+      )}
+    </>
+  );
+
+  if (viewMode === 'list') {
+    return (
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+        <CardContent className="p-0">
+          <div className="flex flex-col sm:flex-row">
+            <div className="relative sm:w-64 h-48 sm:h-32">
+              <Image src={imageUrl} alt={name} 
+          
+                 width={500}
+                height={500}
+              object-cover0/>
+            </div>
+            <div className="flex-1 p-4 flex flex-col justify-between">
+              <div>
+              
+                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{name}</h3>
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{shortDescription}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <PriceTag />
+                <div className="flex items-center space-x-2">
+                  <ActionButtons />
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 group">
-      {/* Product Image */}
-      <div className="relative overflow-hidden">
-        <img
-          src={product.images[0] || '/placeholder-image.jpg'} // Use first image or fallback
-          alt={product.name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300" />
-        <Link
-          href={`/product/${product.id}`}
-          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        >
-          <div className="bg-white rounded-full p-3 shadow-lg">
-            <Eye className="h-5 w-5 text-purple-600" />
+    <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+      <CardContent className="p-0">
+        <div className="relative overflow-hidden">
+          <img
+            src={imageUrl}
+            alt={name}
+            className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {inStock !== false && <ActionButtons compact />}
           </div>
-        </Link>
-      </div>
-
-      {/* Product Info */}
-      <div className="p-4 space-y-3">
-        <div>
-          <span className="inline-block bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded-full capitalize">
-            {product.category}
-          </span>
         </div>
-        
-        <div>
-          <h3 className="font-semibold text-gray-900 text-lg leading-tight">
-            {product.name}
-          </h3>
-          <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-            {product.shortDescription}
-          </p>
-        </div>
-
-     
-
-    
-
-        {/* Actions */}
-        <div className="flex gap-2 pt-2">
-          <Link
-            href={`/product/${product.id}`}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-lg text-sm font-medium text-center transition-colors duration-200"
-          >
-            View Details
+        <div className="p-4">
+          <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem]">{name}</h3>
+          <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-[2.5rem]">{shortDescription}</p>
+          <div className="flex items-center justify-between mb-4">
+            <PriceTag />
+          </div>
+          <Link href={`/product/${id}`}>
+            <Button
+              variant="outline"
+              className="w-full mt-2 hover:text-orange-500 hover:border-orange-500 transition-colors"
+            >
+              View Details
+            </Button>
           </Link>
-          
-        
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
