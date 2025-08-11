@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MessageCircle, ShoppingCart, Heart, Share2, Loader } from 'lucide-react';
+import { ArrowLeft, MessageCircle, ShoppingCart, Heart, Share2, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface Product {
   id: string;
@@ -19,16 +19,31 @@ export interface Product {
 }
 
 interface ApiProduct {
+  quantityOptions: { type: string; price: number; minOrder: number; }[];
   _id: string;
   name: string;
   price: number;
   categoryId: string;
   description: string;
-  qunatity: string; // API typo
+  qunatity: string;
   isFeature: boolean;
   carter: number;
   images: string[];
-  quantityOptions: { type: string; minOrder?: number; price: number }[];
+  points: string[];
+  __v?: number;
+}
+
+interface SimilarProduct {
+  _id: string;
+  name: string;
+  price: number;
+  categoryId: string;
+  description: string;
+  qunatity: string;
+  isFeature: boolean;
+  carter: number;
+  images: string[];
+  points: string[];
   __v?: number;
 }
 
@@ -36,18 +51,18 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
+  const [similarProducts, setSimilarProducts] = useState<SimilarProduct[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedQuantity, setSelectedQuantity] = useState(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  // Add authentication state (simplified for this example)
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Replace with actual auth check
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const API_URL = `https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product/single/${id}`;
 
   useEffect(() => {
-    // Simulate checking authentication status (replace with your auth logic)
-    // For example, check a token in localStorage or use an auth library
     const token = localStorage.getItem('authToken');
     setIsAuthenticated(!!token);
 
@@ -55,9 +70,8 @@ export default function ProductDetail() {
       try {
         setLoading(true);
         setError(null);
-
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
 
         const response = await fetch(API_URL, {
           method: 'GET',
@@ -71,7 +85,6 @@ export default function ProductDetail() {
         });
 
         clearTimeout(timeoutId);
-
         const data = await response.json();
 
         if (data.success && data.product) {
@@ -91,6 +104,27 @@ export default function ProductDetail() {
               { type: 'Default', price: apiProduct.price, minOrder: 1 },
             ],
           });
+
+          // Fetch similar products using GET
+          const SIMILAR_PRODUCTS_API = `https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product/similar?pageno=${currentPage}&id=${apiProduct.categoryId}`;
+          const similarResponse = await fetch(SIMILAR_PRODUCTS_API, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            mode: 'cors',
+            cache: 'no-cache',
+            signal: controller.signal,
+          });
+
+          const similarData = await similarResponse.json();
+          if (similarData.status === 'success' && similarData.data) {
+            setSimilarProducts(similarData.data);
+            setTotalPages(similarData.pages || 1);
+          } else {
+            console.warn('No similar products found');
+          }
         } else {
           throw new Error(data.message || 'Product not found');
         }
@@ -109,7 +143,7 @@ export default function ProductDetail() {
     if (id) {
       fetchProduct();
     }
-  }, [id, router]);
+  }, [id, router, currentPage]);
 
   const handleWhatsAppClick = () => {
     if (!product) return;
@@ -117,7 +151,7 @@ export default function ProductDetail() {
     const message = `Hi! I'm interested in ${product.name} (${selectedOption.type}). Can you please provide more details${isAuthenticated ? ` and confirm the price of ₹${selectedOption.price}?` : '?'}`;
     const phoneNumber = '919876543210';
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank baiser');
+    window.open(url, '_blank');
   };
 
   const handleShare = async () => {
@@ -135,6 +169,12 @@ export default function ProductDetail() {
     } else {
       navigator.clipboard.writeText(window.location.href);
       alert('Product URL copied to clipboard!');
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
     }
   };
 
@@ -182,7 +222,6 @@ export default function ProductDetail() {
           <span>/</span>
           <span className="text-gray-900">{product.name}</span>
         </div>
-
         {/* Back Button */}
         <Link
           href="/product"
@@ -191,7 +230,6 @@ export default function ProductDetail() {
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Products</span>
         </Link>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div className="space-y-4">
@@ -202,7 +240,6 @@ export default function ProductDetail() {
                 className="w-full h-full object-cover"
               />
             </div>
-
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {product.images.map((image, index) => (
@@ -225,13 +262,12 @@ export default function ProductDetail() {
               </div>
             )}
           </div>
-
           {/* Product Information */}
           <div className="space-y-6">
             <div>
               <div className="flex items-start justify-between mb-2">
                 <span className="inline-block bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full capitalize">
- either: {product.category}
+                  {product.category}
                 </span>
                 <div className="flex items-center space-x-2">
                   <button
@@ -245,11 +281,9 @@ export default function ProductDetail() {
                   </button>
                 </div>
               </div>
-
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
               <p className="text-lg text-gray-600 leading-relaxed">{product.description}</p>
             </div>
-
             {/* Quantity Selection */}
             <div className="space-y-4">
               <div>
@@ -294,27 +328,25 @@ export default function ProductDetail() {
                   ))}
                 </div>
               </div>
-
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={handleWhatsAppClick}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2"
-                  disabled={!isAuthenticated} // Disable if not authenticated
+                  disabled={!isAuthenticated}
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span>Contact via WhatsApp</span>
                 </button>
                 <button
                   className="flex-1 border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2"
-                  disabled={!isAuthenticated} // Disable if not authenticated
+                  disabled={!isAuthenticated}
                 >
                   <ShoppingCart className="h-5 w-5" />
                   <span>Add to Inquiry</span>
                 </button>
               </div>
             </div>
-
             {/* Login Prompt */}
             {!isAuthenticated && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-4">
@@ -340,7 +372,6 @@ export default function ProductDetail() {
                 </div>
               </div>
             )}
-
             {/* Product Features */}
             <div className="bg-gray-50 rounded-xl p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Key Features</h3>
@@ -369,8 +400,59 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
+        {/* Similar Products Section */}
+        {similarProducts.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Similar Products</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {similarProducts.map((similarProduct) => (
+                <Link
+                  key={similarProduct._id}
+                  href={`/product/${similarProduct._id}`}
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                >
+                  <div className="aspect-square rounded-t-xl overflow-hidden">
+                    <img
+                      src={similarProduct.images[0] || '/placeholder-image.jpg'}
+                      alt={similarProduct.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 truncate">{similarProduct.name}</h3>
+                    <p className="text-sm text-gray-600 line-clamp-2">{similarProduct.description}</p>
+                    <div className="mt-2 text-lg font-bold text-purple-600">
+                      {isAuthenticated ? `₹${similarProduct.price.toFixed(2)}` : 'Login to view price'}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-center space-x-4">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 text-gray-600 hover:text-purple-600 disabled:text-gray-300 transition-colors"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <span className="text-gray-900">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-gray-600 hover:text-purple-600 disabled:text-gray-300 transition-colors"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      </div>
-  
+    </div>
   );
 }
