@@ -1,15 +1,40 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Menu, X, User, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation'; // Import useRouter for redirect after logout
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [userName, setUserName] = useState(''); // State for user's name
+  const router = useRouter();
 
-  const loggedIn = false;
+  // Check if user is logged in by verifying token in localStorage
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const storedUserName = localStorage.getItem('userName'); // Adjust key based on your storage
+    if (token) {
+      setLoggedIn(true);
+      setUserName(storedUserName || 'User'); // Fallback to 'User' if name not found
+    } else {
+      setLoggedIn(false);
+      setUserName('');
+    }
+  }, []);
 
-  const isActive = (path: string) => false;
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userName'); // Clear user name
+    setLoggedIn(false);
+    setUserName('');
+    setIsMenuOpen(false); // Close mobile menu on logout
+    router.push('/login'); // Redirect to login page
+  };
+
+  const isActive = (path: string) => false; // Adjust this based on your routing logic
 
   return (
     <header className="bg-white shadow-sm border-b border-yellow-400 sticky top-0 z-50">
@@ -19,7 +44,7 @@ export default function Header() {
           <Link href="/" className="flex items-center space-x-2">
             <div className="p-1 rounded-lg">
               <Image
-                src="/logo.png" // Put the image in public/logo.png
+                src="/logo.png"
                 alt="Barber Syndicate Logo"
                 width={80}
                 height={50}
@@ -60,22 +85,26 @@ export default function Header() {
           <div className="hidden md:flex items-center space-x-4">
             {loggedIn ? (
               <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 text-sm text-gray-700">
+                <div className="flex items-center space-x-2 text-sm141414 text-gray-700">
                   <User className="h-4 w-4" />
-                  <span>Welcome</span>
+                  <span>Welcome, {userName}</span> {/* Display user's name */}
                 </div>
-                <button className="flex items-center space-x-1 text-sm text-gray-500 hover:text-red-600 transition-colors">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-1 text-sm text-gray-500 hover:text-red-600 transition-colors"
+                >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
+              <div className="flex1 items-center space-x-3">
                 <Link
                   href="/login"
                   className="text-sm font-medium text-gray-700 hover:text-red-700 transition-colors"
                 >
                   Login
+ Ascendancy
                 </Link>
                 <Link
                   href="/register"
@@ -132,9 +161,12 @@ export default function Header() {
                 {loggedIn ? (
                   <div className="space-y-3">
                     <div className="px-3 py-2 text-sm text-gray-700 bg-gray-50 rounded-md">
-                      Welcome
+                      Welcome, {userName} {/* Display user's name */}
                     </div>
-                    <button className="w-full text-left px-3 py-2 text-sm text-red-700 hover:bg-red-100 rounded-md transition-colors">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 text-sm text-red-700 hover:bg-red-100 rounded-md transition-colors"
+                    >
                       Logout
                     </button>
                   </div>

@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
+import api from '@/lib/axios';
 
 const RegisterUI = () => {
-  // State for form data
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,65 +15,54 @@ const RegisterUI = () => {
     gstnumber: '',
     address: '',
   });
-
-  // State for error and success messages
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setIsLoading(true);
-
+  
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
-
+  
     if (!formData.name || !formData.email || !formData.phone || !formData.password || !formData.address) {
       setError('Please fill in all required fields');
       setIsLoading(false);
       return;
     }
-
-    // Prepare payload for API
+  
     const payload = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       password: formData.password,
-      gstnumber: formData.gstnumber || undefined, // Optional field
+      gstnumber: formData.gstnumber || undefined,
       address: formData.address,
     };
-
+  
     try {
-      const response = await fetch('https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/user/singup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+      const response = await api.post('/user/signup', payload); // Corrected typo: 'singup' -> 'signup'
+      const { token } = response.data;
+  
+      // Save token to localStorage
+      if (token) {
+        localStorage.setItem('token', token);
+        console.log('Registration successful. Token saved:', token); // Added console log for token
       }
-
+  
       setSuccess('Registration successful! Awaiting admin approval.');
-      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -84,7 +73,7 @@ const RegisterUI = () => {
         address: '',
       });
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }

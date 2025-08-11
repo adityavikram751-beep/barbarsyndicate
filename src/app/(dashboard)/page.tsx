@@ -139,7 +139,7 @@ export default function HomePage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
             <Link
-              href="/products"
+              href="/product"
               className="text-purple-600 hover:text-purple-800 font-medium flex items-center"
             >
               View All Products <ArrowRight className="ml-2 h-5 w-5" />

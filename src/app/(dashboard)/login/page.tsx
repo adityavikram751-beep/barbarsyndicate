@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Import useRouter
+import api from '@/lib/axios';
 
 const LoginUI = () => {
   const [formData, setFormData] = useState({
@@ -13,26 +15,23 @@ const LoginUI = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter(); // Initialize useRouter
 
-  // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Toggle password visibility
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setIsLoading(true);
 
-    // Basic validation
     if (!formData.email || !formData.password) {
       setError('Please fill in all required fields');
       setIsLoading(false);
@@ -43,36 +42,29 @@ const LoginUI = () => {
       email: formData.email,
       password: formData.password,
     };
-
     try {
-      const response = await fetch('https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/user/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-    
-      const data = await response.json();
-    
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+      const response = await api.post('/user/login', payload); // Use Axios
+      const { token } = response.data;
+
+      // Save token to localStorage
+      if (token) {
+        localStorage.setItem('token', token);
+        console.log('Login successful. Token saved:', token);
       }
-    
-      // Log the token to the console
-      console.log('Login successful. Token:', data.token);
-    
-    localStorage.setItem('token', data.token);
-    
+
       setSuccess('Login successful!');
       setFormData({ email: '', password: '' });
+
+      // Redirect to /product page after a short delay (optional)
+      setTimeout(() => {
+        router.push('/product');
+      }, 1000); // 1-second delay to show success message
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }
-
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-amber-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -155,8 +147,6 @@ const LoginUI = () => {
                 {isLoading ? 'Signing In...' : 'Sign In'}
               </button>
             </form>
-
-           
 
             {/* Footer */}
             <div className="mt-6 text-center">
