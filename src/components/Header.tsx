@@ -17,7 +17,7 @@ export default function Header() {
     const userId = localStorage.getItem('userId');
 
     if (token && userId) {
-      fetch(`https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/user/single-user/${userId}`, {
+      fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/user/single-user/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`, // if API checks auth
         },
@@ -99,7 +99,7 @@ export default function Header() {
       {isMenuOpen && (
         <div className="absolute top-16 left-0 w-full bg-white shadow-md flex flex-col items-center gap-4 py-4 md:hidden">
           <Link href="/" onClick={() => setIsMenuOpen(false)}>Home</Link>
-          <Link href="/products" onClick={() => setIsMenuOpen(false)}>Products</Link>
+          <Link href="/product" onClick={() => setIsMenuOpen(false)}>Products</Link>
           <Link href="/contact" onClick={() => setIsMenuOpen(false)}>Contact</Link>
           {loggedIn ? (
             <>

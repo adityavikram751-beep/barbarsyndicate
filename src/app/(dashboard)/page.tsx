@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle, MessageCircle, Truck, FileText, Loader } from 'lucide-react';
 import { productCategories } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
-import { Carousel } from '@/components/ui/carousel';
 import { CarouselDemo } from '@/components/CarouselCategory';
 
 interface Product {
@@ -31,7 +30,7 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchFeaturedProducts() {
       try {
-        const response = await fetch('https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product/feature');
+        const response = await fetch('https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/feature');
         const data = await response.json();
         if (data.success) {
           // Map API data to Product interface
@@ -91,7 +90,7 @@ export default function HomePage() {
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/products"
+                  href="/product"
                   className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   <span>Browse Products</span>

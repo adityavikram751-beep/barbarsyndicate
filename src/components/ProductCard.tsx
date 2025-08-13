@@ -53,7 +53,7 @@ export default function ProductCard({ product, viewMode = 'grid' }: ProductCardP
           <Eye className="h-4 w-4" />
         </Button>
       </Link>
-      {!compact && (
+      {/* {!compact && (
         <Button
           size="sm"
           disabled={inStock === false}
@@ -61,7 +61,7 @@ export default function ProductCard({ product, viewMode = 'grid' }: ProductCardP
         >
           <ShoppingCart className="h-4 w-4 mr-1" /> Add to Cart
         </Button>
-      )}
+      )} */}
     </>
   );
 

@@ -60,7 +60,7 @@ export default function ProductDetail() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const API_URL = `https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product/single/${id}`;
+  const API_URL = `https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/single/${id}`;
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -106,7 +106,7 @@ export default function ProductDetail() {
           });
 
           // Fetch similar products using GET
-          const SIMILAR_PRODUCTS_API = `https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product/similar?pageno=${currentPage}&id=${apiProduct.categoryId}`;
+          const SIMILAR_PRODUCTS_API = `https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/similar?pageno=${currentPage}&id=${apiProduct.categoryId}`;
           const similarResponse = await fetch(SIMILAR_PRODUCTS_API, {
             method: 'GET',
             headers: {

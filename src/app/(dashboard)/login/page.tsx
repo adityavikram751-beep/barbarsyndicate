@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
@@ -32,40 +31,40 @@ const LoginUI = () => {
     setSuccess('');
     setPendingApproval('');
     setIsLoading(true);
-  
+
     if (!formData.email || !formData.password) {
       setError('Please fill in all required fields');
       setIsLoading(false);
       return;
     }
-  
+
     const payload = {
       email: formData.email,
       password: formData.password,
     };
-  
+
     try {
       const res = await fetch(
-        'https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/user/login',
+        'https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/user/login',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         }
       );
-  
+
       const data = await res.json();
       console.log('Login API response:', data);
-  
+
       if (!res.ok || !data.success) {
         throw new Error(data?.message || 'Something went wrong. Please try again.');
       }
-  
+
       const token = data?.token;
       const userId = data?.id;
       const approvalStatus = data?.aprroval; // spelling matches API
       const message = data?.message || 'Login successful!';
-  
+
       // Save token and id to localStorage
       if (token) {
         localStorage.setItem('token', token);
@@ -75,7 +74,7 @@ const LoginUI = () => {
         localStorage.setItem('userId', userId);
         console.log('User ID saved to localStorage:', userId);
       }
-  
+
       // Approval check
       if (approvalStatus?.toLowerCase() !== 'aprroved') {
         setPendingApproval('Your account is not approved by admin yet.');
@@ -83,7 +82,6 @@ const LoginUI = () => {
         setSuccess(message);
         setTimeout(() => router.push('/product'), 1000);
       }
-  
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Something went wrong. Please try again.');
@@ -91,8 +89,7 @@ const LoginUI = () => {
       setIsLoading(false);
     }
   };
-  
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-amber-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
@@ -105,7 +102,6 @@ const LoginUI = () => {
             <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
             <p className="text-purple-100 mt-1">Sign in to your wholesale account</p>
           </div>
-
           {/* Form */}
           <div className="px-8 py-6">
             {error && (
@@ -114,21 +110,18 @@ const LoginUI = () => {
                 <div className="text-sm text-red-700">{error}</div>
               </div>
             )}
-
             {success && (
               <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-3">
                 <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-green-700">{success}</div>
               </div>
             )}
-
             {pendingApproval && (
               <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start space-x-3">
                 <Clock className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-800">{pendingApproval}</div>
               </div>
             )}
-
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -145,7 +138,6 @@ const LoginUI = () => {
                   required
                 />
               </div>
-
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                   Password *
@@ -169,8 +161,15 @@ const LoginUI = () => {
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+                <div className="mt-2 text-right">
+                  <Link
+                    href="/login/forgot-password"
+                    className="text-sm font-medium text-purple-600 hover:text-purple-500 transition-colors"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
               </div>
-
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
@@ -179,7 +178,6 @@ const LoginUI = () => {
                 {isLoading ? 'Signing In...' : 'Sign In'}
               </button>
             </form>
-
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}

@@ -66,9 +66,9 @@ export default function ProductCatalog() {
   const [totalResults, setTotalResults] = useState<number>(0);
 
   const PRODUCT_API_URL =
-    "https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/product";
+    "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product";
   const CATEGORY_API_URL =
-    "https://qdp1vbhp-3000.inc1.devtunnels.ms/api/v1/category";
+    "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/category";
 
   // Fetch products
   const fetchProducts = async (page = 1, retryCount = 0) => {

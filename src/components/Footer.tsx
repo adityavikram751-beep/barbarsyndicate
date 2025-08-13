@@ -46,7 +46,7 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="/products" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <a href="/product" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Products
                 </a>
               </li>
@@ -73,22 +73,22 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4 text-yellow-300">Categories</h3>
             <ul className="space-y-2">
               <li>
-                <a href="/products?category=skincare" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <a href="/product?category=skincare" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Skincare
                 </a>
               </li>
               <li>
-                <a href="/products?category=haircare" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <a href="/product?category=haircare" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Haircare
                 </a>
               </li>
               <li>
-                <a href="/products?category=makeup" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <a href="/product?category=makeup" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Makeup
                 </a>
               </li>
               <li>
-                <a href="/products?category=fragrance" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <a href="/product?category=fragrance" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Fragrance
                 </a>
               </li>
