@@ -112,9 +112,9 @@ export default function ProductCard({ product, viewMode = 'grid' }: ProductCardP
         <div className="p-4">
           <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem]">{name}</h3>
           <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-[2.5rem]">{shortDescription}</p>
-          <div className="flex items-center justify-between mb-4">
+          {/* <div className="flex items-center justify-between mb-4">
             <PriceTag />
-          </div>
+          </div> */}
           <Link href={`/product/${id}`}>
             <Button
               variant="outline"

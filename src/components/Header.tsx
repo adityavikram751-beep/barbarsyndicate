@@ -92,7 +92,7 @@ export default function Header() {
 
   const handleEnquiryClick = () => {
     setIsMenuOpen(false);
-    router.push('/');
+   router.push('/inquiry');
   };
 
   return (
@@ -247,6 +247,7 @@ export default function Header() {
                   </div>
                   
                   {/* Mobile Enquiry Button */}
+                  
                   <button
                     onClick={handleEnquiryClick}
                     className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200"

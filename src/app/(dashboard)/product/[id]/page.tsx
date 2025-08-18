@@ -533,12 +533,12 @@ export default function ProductDetail() {
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 truncate mb-2">{similarProduct.name}</h3>
                     <p className="text-sm text-gray-600 line-clamp-2 mb-2">{similarProduct.description}</p>
-                    <div className="text-lg font-bold text-purple-600">
+                    {/* <div className="text-lg font-bold text-purple-600">
                       {isAuthenticated && similarProduct.variants.length > 0 
-                        ? `From ₹${getLowestPrice(similarProduct.variants).toFixed(2)}` 
-                        : 'Login to view price'
+                        // ? `From ₹${getLowestPrice(similarProduct.variants).toFixed(2)}` 
+                        ? 'Login to view price'
                       }
-                    </div>
+                    </div> */}
                   </div>
                 </Link>
               ))}
