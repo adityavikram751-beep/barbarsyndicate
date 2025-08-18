@@ -15,14 +15,25 @@ import {
 } from "@/components/ui/dialog"
 import { Check, X, Eye } from "lucide-react"
 
-const userRequests = [
+type UserRequestStatus = "pending" | "approved" | "rejected";
+
+type UserRequest = {
+  id: number;
+  name: string;
+  phone: string;
+  address: string;
+  gstNumber: string;
+  status: UserRequestStatus;
+};
+
+const userRequests: UserRequest[] = [
   {
     id: 1,
     name: "Sarah Johnson",
     phone: "+1 (555) 123-4567",
     address: "123 Beauty St, Cosmetic City, CC 12345",
     gstNumber: "GST123456789",
-    status: "pending" as const,
+    status: "pending",
   },
   {
     id: 2,
@@ -30,7 +41,7 @@ const userRequests = [
     phone: "+1 (555) 987-6543",
     address: "456 Makeup Ave, Beauty Town, BT 67890",
     gstNumber: "GST987654321",
-    status: "approved" as const,
+    status: "approved",
   },
   {
     id: 3,
@@ -38,22 +49,26 @@ const userRequests = [
     phone: "+1 (555) 456-7890",
     address: "789 Skincare Blvd, Wellness City, WC 54321",
     gstNumber: "GST456789123",
-    status: "pending" as const,
+    status: "pending",
   },
-]
+];
 
 export function UserRequests() {
-  const [requests, setRequests] = useState(userRequests)
+  const [requests, setRequests] = useState<UserRequest[]>(userRequests);
 
   const handleApprove = (id: number) => {
-    setRequests(requests.map((req) => (req.id === id ? { ...req, status: "approved" as const } : req)))
-  }
+    setRequests(requests.map(request => 
+      request.id === id ? {...request, status: "approved"} : request
+    ));
+  };
 
   const handleReject = (id: number) => {
-    setRequests(requests.map((req) => (req.id === id ? { ...req, status: "rejected" as const } : req)))
-  }
+    setRequests(requests.map(request => 
+      request.id === id ? {...request, status: "rejected"} : request
+    ));
+  };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: UserRequestStatus) => {
     switch (status) {
       case "approved":
         return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Approved</Badge>
