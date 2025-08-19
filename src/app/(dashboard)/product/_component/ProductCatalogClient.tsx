@@ -14,6 +14,7 @@ export interface Product {
   name: string;
   price: number;
   category: string;
+  brand: string;
   shortDescription: string;
   description: string;
   quantity: string;
@@ -28,6 +29,8 @@ interface ApiProduct {
   name: string;
   price: number;
   categoryId: string;
+  brandId?: string;
+  brand?: string;
   description: string;
   qunatity: string;
   isFeature: boolean;
@@ -50,9 +53,15 @@ interface Category {
   name: string;
 }
 
+interface Brand {
+  id: string;
+  name: string;
+}
+
 interface ProductCatalogClientProps {
   initialProducts: ApiProduct[];
   initialCategories: Category[];
+  initialBrands?: Brand[];
   initialPage: number;
   initialTotalPages: number;
   initialTotalResults: number;
@@ -61,6 +70,7 @@ interface ProductCatalogClientProps {
 export default function ProductCatalogClient({
   initialProducts,
   initialCategories,
+  initialBrands = [],
   initialPage,
   initialTotalPages,
   initialTotalResults,
@@ -70,9 +80,13 @@ export default function ProductCatalogClient({
   const [selectedCategory, setSelectedCategory] = useState(
     searchParams.get("category") || "all"
   );
+  const [selectedBrand, setSelectedBrand] = useState(
+    searchParams.get("brand") || "all"
+  );
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [products, setProducts] = useState<ApiProduct[]>(initialProducts);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [brands, setBrands] = useState<Brand[]>(initialBrands);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(initialPage);
@@ -83,6 +97,8 @@ export default function ProductCatalogClient({
     "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product";
   const CATEGORY_API_URL =
     "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/category";
+  const BRAND_API_URL =
+    "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/brands";
 
   // Fetch products
   const fetchProducts = async (page = 1, retryCount = 0) => {
@@ -94,14 +110,19 @@ export default function ProductCatalogClient({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`${PRODUCT_API_URL}?page=${page}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        signal: controller.signal,
-      });
+      const response = await fetch(
+        `${PRODUCT_API_URL}?page=${page}&category=${selectedCategory !== "all" ? selectedCategory : ""}&brand=${
+          selectedBrand !== "all" ? selectedBrand : ""
+        }`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          signal: controller.signal,
+        }
+      );
 
       clearTimeout(timeoutId);
 
@@ -138,27 +159,57 @@ export default function ProductCatalogClient({
       const response = await fetch(CATEGORY_API_URL);
       const data = await response.json();
       if (data.success && Array.isArray(data.data)) {
-        setCategories(
-          data.data.map((cat: any) => ({
-            id: cat._id,
-            name: cat.categoryname,
-          }))
-        );
+        const newCategories = data.data.map((cat: any) => ({
+          id: cat._id,
+          name: cat.categoryname,
+        }));
+        setCategories(newCategories);
+        console.log("Fetched categories:", newCategories); // Debugging
+      } else {
+        console.error("Invalid category data:", data);
       }
     } catch (err) {
       console.error("Error fetching categories", err);
     }
   };
 
+  // Fetch brands from API
+  const fetchBrands = async () => {
+    try {
+      const response = await fetch(BRAND_API_URL);
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        const newBrands = data.data.map((brand: any) => ({
+          id: brand._id,
+          name: brand.brand,
+        }));
+        setBrands(newBrands);
+        console.log("Fetched brands:", newBrands); // Debugging
+      } else {
+        console.error("Invalid brand data:", data);
+      }
+    } catch (err) {
+      console.error("Error fetching brands", err);
+    }
+  };
+
   useEffect(() => {
-    setSelectedCategory(searchParams.get("category") || "all");
+    const categoryFromParams = searchParams.get("category") || "all";
+    const brandFromParams = searchParams.get("brand") || "all";
+    console.log("URL params - category:", categoryFromParams, "brand:", brandFromParams); // Debugging
+    setSelectedCategory(categoryFromParams);
+    setSelectedBrand(brandFromParams);
+
     if (!initialProducts.length) {
       fetchProducts();
     }
     if (!initialCategories.length) {
       fetchCategories();
     }
-  }, [searchParams, initialProducts, initialCategories]);
+    if (!initialBrands.length) {
+      fetchBrands();
+    }
+  }, [searchParams, initialProducts, initialCategories, initialBrands]);
 
   const transformedProducts = useMemo(() => {
     return products.map((product) => ({
@@ -166,6 +217,7 @@ export default function ProductCatalogClient({
       name: product.name,
       price: product.price,
       category: product.categoryId,
+      brand: product.brandId || product.brand || "Unknown",
       shortDescription: product.description,
       description: product.description,
       quantity: product.qunatity,
@@ -185,15 +237,38 @@ export default function ProductCatalogClient({
           .includes(searchTerm.toLowerCase());
       const matchesCategory =
         selectedCategory === "all" || product.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesBrand =
+        selectedBrand === "all" || product.brand === selectedBrand;
+      return matchesSearch && matchesCategory && matchesBrand;
     });
-  }, [transformedProducts, searchTerm, selectedCategory]);
+  }, [transformedProducts, searchTerm, selectedCategory, selectedBrand]);
 
   const handlePageChange = (page: number) => {
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       fetchProducts(page);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("all");
+    setSelectedBrand("all");
+    console.log("Filters cleared"); // Debugging
+  };
+
+  // Debug selection changes
+  const handleCategoryChange = (value: string) => {
+    console.log("Selected category:", value); // Debugging
+    setSelectedCategory(value);
+    fetchProducts(1); // Refetch products with new filters
+  };
+
+  const handleBrandChange = (value: string) => {
+    console.log("Selected brand:", value); // Debugging
+    setSelectedBrand(value);
+    fetchProducts(1); // Refetch products with new filters
   };
 
   if (loading && products.length === 0) {
@@ -231,15 +306,14 @@ export default function ProductCatalogClient({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 min-h-screen flex flex-col justify-center">
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Product Catalog
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Discover our extensive collection of premium wholesale cosmetic
-            products
+            Discover our extensive collection of premium wholesale cosmetic products
           </p>
         </div>
 
@@ -276,45 +350,103 @@ export default function ProductCatalogClient({
                 </div>
 
                 {/* Categories */}
-                <div>
+                <div className="mb-8">
                   <Label className="text-sm font-medium text-gray-700 mb-4 block">
                     Categories
                   </Label>
                   <RadioGroup
                     value={selectedCategory}
-                    onValueChange={setSelectedCategory}
+                    onValueChange={handleCategoryChange}
                     className="space-y-3"
                   >
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem
                         value="all"
-                        id="all"
+                        id="category-all"
                         className="text-purple-600"
                       />
                       <Label
-                        htmlFor="all"
+                        htmlFor="category-all"
                         className="text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors"
                       >
                         All Categories
                       </Label>
                     </div>
-                    {categories.map((category) => (
-                      <div key={category.id} className="flex items-center space-x-3">
-                        <RadioGroupItem
-                          value={category.id}
-                          id={category.id}
-                          className="text-purple-600"
-                        />
-                        <Label
-                          htmlFor={category.id}
-                          className="text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors capitalize"
-                        >
-                          {category.name}
-                        </Label>
-                      </div>
-                    ))}
+                    {categories.length > 0 ? (
+                      categories.map((category) => (
+                        <div key={category.id} className="flex items-center space-x-3">
+                          <RadioGroupItem
+                            value={category.id}
+                            id={`category-${category.id}`}
+                            className="text-purple-600"
+                          />
+                          <Label
+                            htmlFor={`category-${category.id}`}
+                            className="text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors capitalize"
+                          >
+                            {category.name}
+                          </Label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No categories available</p>
+                    )}
                   </RadioGroup>
                 </div>
+
+                {/* Brands */}
+                <div className="mb-8">
+                  <Label className="text-sm font-medium text-gray-700 mb-4 block">
+                    Brands
+                  </Label>
+                  <RadioGroup
+                    value={selectedBrand}
+                    onValueChange={handleBrandChange}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem
+                        value="all"
+                        id="brand-all"
+                        className="text-purple-600"
+                      />
+                      <Label
+                        htmlFor="brand-all"
+                        className="text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors"
+                      >
+                        All Brands
+                      </Label>
+                    </div>
+                    {brands.length > 0 ? (
+                      brands.map((brand) => (
+                        <div key={brand.id} className="flex items-center space-x-3">
+                          <RadioGroupItem
+                            value={brand.id}
+                            id={`brand-${brand.id}`}
+                            className="text-purple-600"
+                          />
+                          <Label
+                            htmlFor={`brand-${brand.id}`}
+                            className="text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors capitalize"
+                          >
+                            {brand.name}
+                          </Label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No brands available</p>
+                    )}
+                  </RadioGroup>
+                </div>
+
+                {/* Clear Filters Button */}
+                <Button
+                  onClick={clearAllFilters}
+                  variant="outline"
+                  className="w-full text-purple-600 border-purple-600 hover:bg-purple-50"
+                >
+                  Clear All Filters
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -343,32 +475,19 @@ export default function ProductCatalogClient({
                     </span>
                   </span>
                 )}
+                {selectedBrand !== "all" && (
+                  <span className="ml-1">
+                    from{" "}
+                    <span className="capitalize font-medium">
+                      {brands.find((b) => b.id === selectedBrand)?.name ||
+                        selectedBrand}
+                    </span>
+                  </span>
+                )}
               </p>
-
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 mr-2">View:</span>
-                <div className="flex border rounded-lg overflow-hidden">
-                  <Button
-                    variant={viewMode === "grid" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("grid")}
-                    className="rounded-none border-r"
-                  >
-                    <Grid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "list" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("list")}
-                    className="rounded-none"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
             </div>
 
-            {/* Products Grid/List */}
+            {/* Products Grid */}
             {filteredProducts.length === 0 ? (
               <div className="text-center py-16">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -378,10 +497,7 @@ export default function ProductCatalogClient({
                   Try adjusting your search or filter criteria
                 </p>
                 <Button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSelectedCategory("all");
-                  }}
+                  onClick={clearAllFilters}
                   variant="outline"
                   className="text-purple-600 border-purple-600 hover:bg-purple-50"
                 >
@@ -390,24 +506,18 @@ export default function ProductCatalogClient({
               </div>
             ) : (
               <>
-                <div
-                  className={
-                    viewMode === "grid"
-                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                      : "space-y-4"
-                  }
-                >
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredProducts.map((product) => (
                     <ProductCard
                       key={product.id}
                       product={product}
-                      viewMode={viewMode}
+                      viewMode="grid"
                     />
                   ))}
                 </div>
 
                 {totalPages > 1 && filteredProducts.length > 0 && (
-                  <div className="flex items-center justify-center space-x-2(mt-8">
+                  <div className="flex items-center justify-center space-x-2 mt-8">
                     <Button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1 || loading}

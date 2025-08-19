@@ -45,9 +45,9 @@ export default function ProductCard({ product, viewMode = 'grid' }: ProductCardP
 
   const ActionButtons = ({ compact = false }: { compact?: boolean }) => (
     <>
-      <Button variant="outline" size="sm" className="hover:text-red-500">
+      {/* <Button variant="outline" size="sm" className="hover:text-red-500">
         <Heart className="h-4 w-4" />
-      </Button>
+      </Button> */}
       <Link href={`/product/${id}`}>
         <Button variant="outline" size="sm" className="hover:text-orange-500">
           <Eye className="h-4 w-4" />

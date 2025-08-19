@@ -1,3 +1,4 @@
+
 import { Suspense } from "react";
 import ProductCatalogClient from "./_component/ProductCatalogClient";
 
@@ -6,6 +7,8 @@ interface ApiProduct {
   name: string;
   price: number;
   categoryId: string;
+  brandId?: string;
+  brand?: string;
   description: string;
   qunatity: string;
   isFeature: boolean;
@@ -28,10 +31,17 @@ interface Category {
   name: string;
 }
 
+interface Brand {
+  id: string;
+  name: string;
+}
+
 const PRODUCT_API_URL =
   "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product";
 const CATEGORY_API_URL =
   "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/category";
+const BRAND_API_URL =
+  "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/brands";
 
 async function fetchInitialProducts(page = 1): Promise<ApiResponse> {
   try {
@@ -41,7 +51,7 @@ async function fetchInitialProducts(page = 1): Promise<ApiResponse> {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      next: { revalidate: 3600 }, // Optional: Cache for 1 hour
+      next: { revalidate: 3600 }, // Cache for 1 hour
     });
     const data: ApiResponse = await response.json();
     // Map products to include quantityOptions
@@ -65,7 +75,7 @@ async function fetchInitialProducts(page = 1): Promise<ApiResponse> {
 async function fetchCategories(): Promise<Category[]> {
   try {
     const response = await fetch(CATEGORY_API_URL, {
-      next: { revalidate: 3600 }, // Optional: Cache for 1 hour
+      next: { revalidate: 3600 }, // Cache for 1 hour
     });
     const data = await response.json();
     if (data.success && Array.isArray(data.data)) {
@@ -81,18 +91,37 @@ async function fetchCategories(): Promise<Category[]> {
   }
 }
 
+async function fetchBrands(): Promise<Brand[]> {
+  try {
+    const response = await fetch(BRAND_API_URL, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
+    const data = await response.json();
+    if (data.success && Array.isArray(data.data)) {
+      return data.data.map((brand: any) => ({
+        id: brand._id,
+        name: brand.brand,
+      }));
+    }
+    return [];
+  } catch (err) {
+    console.error("Error fetching brands", err);
+    return [];
+  }
+}
+
 export default async function ProductPage() {
   const initialData = await fetchInitialProducts(1);
   const initialCategories = await fetchCategories();
+  const initialBrands = await fetchBrands();
 
   return (
     <Suspense
       fallback={
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
-            <span className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600 inline-block border-4 border-purple-200 border-t-purple-600 rounded-full">
+            <span className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-600 inline-block border-4 border-purple-200 border-t-purple-600 rounded-full"></span>
             <p className="text-gray-600">Loading products...</p>
-            </span>
           </div>
         </div>
       }
@@ -100,6 +129,7 @@ export default async function ProductPage() {
       <ProductCatalogClient
         initialProducts={initialData.products}
         initialCategories={initialCategories}
+        initialBrands={initialBrands}
         initialPage={initialData.currentPage}
         initialTotalPages={initialData.totalPages}
         initialTotalResults={initialData.totalResults}

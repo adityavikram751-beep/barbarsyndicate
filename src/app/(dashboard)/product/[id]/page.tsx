@@ -155,13 +155,25 @@ export default function ProductDetail() {
       return;
     }
 
+    if (!product.variants || product.variants.length === 0) {
+      setEnquiryError('No variants available for this product');
+      return;
+    }
+
     try {
       setIsSubmittingEnquiry(true);
       setEnquiryError(null);
 
+      // Get the selected variant
+      const selectedVariantData = product.variants[selectedVariant];
+
       const enquiryData = {
         id: userId,
-        productId: product.id
+        productId: product.id,
+        variants: [{
+          price: selectedVariantData.price,
+          quantity: selectedVariantData.quantity
+        }]
       };
 
       const response = await fetch(ENQUIRY_API_URL, {
@@ -233,7 +245,7 @@ export default function ProductDetail() {
 
   // Enquiry Success Popup Component
   const EnquirySuccessPopup = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -369,9 +381,9 @@ export default function ProductDetail() {
                   >
                     <Share2 className="h-5 w-5" />
                   </button>
-                  <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                  {/* <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
                     <Heart className="h-5 w-5" />
-                  </button>
+                  </button> */}
                 </div>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>

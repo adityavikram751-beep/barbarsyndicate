@@ -100,14 +100,19 @@ export default function Header() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <div className="relative w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Barber Syndicate
-            </span>
-          </Link>
+      <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+  <div className="relative w-8 h-8  rounded-lg flex items-center justify-center">
+    <Image
+      src="/logo.png"
+      alt="Logo"
+      width={32}
+      height={32}
+      className="object-cover rounded-lg"
+    />
+  </div>
+  <span className="text-xl font-bold text-gray-900">Barber Syndicate</span>
+</Link>
+          
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">

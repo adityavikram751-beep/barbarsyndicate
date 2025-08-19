@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Mail, Phone, MapPin, Calendar, User, Package, Star, ShoppingBag, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Calendar, User, Package, Star, ShoppingBag, Clock, AlertTriangle } from 'lucide-react';
 
 interface Enquiry {
   _id: string;
@@ -23,12 +23,12 @@ interface Enquiry {
     name: string;
     brand: string;
     categoryId: string;
-    variants: { price: string; quantity: string; _id: string }[];
     description: string;
     isFeature: boolean;
     images: string[];
     points: string[];
-  };
+  } | null;
+  variants: { price: number; quantity: string; _id: string }[];
   AddedAt: string;
   __v: number;
 }
@@ -42,22 +42,15 @@ export default function EnquiryPage() {
   useEffect(() => {
     const fetchEnquiries = async () => {
       try {
-        const userId = localStorage.getItem('userId');
         const token = localStorage.getItem('token');
-
-        if (!userId) {
-          setError('User ID not found in localStorage. Please log in.');
+        const storedUserId = localStorage.getItem('userId');
+        if (!token || !storedUserId) {
+          setError('You are not logged in. Please log in to view your enquiries.');
           setLoading(false);
           return;
         }
 
-        if (!token) {
-          setError('Authentication token not found. Please log in.');
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/enquiry/${userId}`, {
+        const response = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/enquiry/${storedUserId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -73,10 +66,11 @@ export default function EnquiryPage() {
 
         if (result.success && result.data && result.data.length > 0) {
           setEnquiries(result.data);
-          // Initialize selected images for each enquiry
           const initialSelectedImages: { [key: string]: number } = {};
           result.data.forEach((enquiry: Enquiry) => {
-            initialSelectedImages[enquiry._id] = 0;
+            if (enquiry.productId) {
+              initialSelectedImages[enquiry._id] = 0;
+            }
           });
           setSelectedImages(initialSelectedImages);
         } else {
@@ -161,12 +155,10 @@ export default function EnquiryPage() {
     );
   }
 
-  // Get user info from first enquiry (since all enquiries are from the same user)
   const userInfo = enquiries[0].user_id;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
@@ -189,13 +181,10 @@ export default function EnquiryPage() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left Sidebar - User Information (Fixed) */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-              {/* User Information Card */}
               <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -251,12 +240,9 @@ export default function EnquiryPage() {
                   </div>
                 </CardContent>
               </Card>
-
-             
             </div>
           </div>
 
-          {/* Right Content - Enquiries List */}
           <div className="lg:col-span-3 space-y-6">
             {enquiries.map((enquiry, index) => (
               <Card key={enquiry._id} className="shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -281,106 +267,113 @@ export default function EnquiryPage() {
                 </CardHeader>
 
                 <CardContent className="pt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Product Images */}
-                    <div className="space-y-4">
-                      {/* Main Image */}
-                      <div className="aspect-square bg-gray-50 rounded-lg overflow-hidden">
-                        <img
-                          src={enquiry.productId.images[selectedImages[enquiry._id]] || '/placeholder-image.jpg'}
-                          alt={enquiry.productId.name}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        />
+                  {!enquiry.productId ? (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertTriangle className="w-8 h-8 text-orange-600" />
                       </div>
-                      
-                      {/* Thumbnail Images */}
-                      {enquiry.productId.images.length > 1 && (
-                        <div className="grid grid-cols-4 gap-2">
-                          {enquiry.productId.images.slice(0, 4).map((image, imgIndex) => (
-                            <button
-                              key={imgIndex}
-                              onClick={() => handleImageSelect(enquiry._id, imgIndex)}
-                              className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                                selectedImages[enquiry._id] === imgIndex 
-                                  ? 'border-blue-500 ring-2 ring-blue-200' 
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                            >
-                              <img
-                                src={image}
-                                alt={`${enquiry.productId.name} ${imgIndex + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Product Information Unavailable</h3>
+                      <p className="text-gray-600 mb-4">
+                        This enquiry was submitted but the product details are currently not available.
+                      </p>
+                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                        Product Not Linked
+                      </Badge>
                     </div>
-
-                    {/* Product Information */}
-                    <div className="space-y-4">
-                      {/* Product Title & Brand */}
-                      <div>
-                        <p className="text-sm text-gray-600 uppercase tracking-wide">{enquiry.productId.brand}</p>
-                        <h3 className="text-xl font-bold text-gray-900 mt-1 line-clamp-2">{enquiry.productId.name}</h3>
-                        {enquiry.productId.isFeature && (
-                          <Badge variant="secondary" className="mt-2 bg-yellow-100 text-yellow-800">
-                            <Star className="w-3 h-3 mr-1" />
-                            Featured
-                          </Badge>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="aspect-square bg-gray-50 rounded-lg overflow-hidden">
+                          <img
+                            src={enquiry.productId.images[selectedImages[enquiry._id]] || enquiry.productId.images[0] || '/placeholder-image.jpg'}
+                            alt={enquiry.productId.name}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        
+                        {enquiry.productId.images.length > 1 && (
+                          <div className="grid grid-cols-4 gap-2">
+                            {enquiry.productId.images.slice(0, 4).map((image, imgIndex) => (
+                              <button
+                                key={imgIndex}
+                                onClick={() => handleImageSelect(enquiry._id, imgIndex)}
+                                className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                                  selectedImages[enquiry._id] === imgIndex 
+                                    ? 'border-blue-500 ring-2 ring-blue-200' 
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <img
+                                  src={image}
+                                  alt={`${enquiry.productId!.name} ${imgIndex + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
 
-                      {/* Price Variants */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">Available Variants</h4>
-                        <div className="space-y-2">
-                          {enquiry.productId.variants.slice(0, 2).map((variant, variantIndex) => (
-                            <div key={variant._id} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                              <div>
-                                <p className="font-medium text-gray-900 text-sm">Variant {variantIndex + 1}</p>
-                                <p className="text-xs text-gray-600">Qty: {variant.quantity}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-green-600">₹{parseInt(variant.price).toLocaleString()}</p>
-                              </div>
-                            </div>
-                          ))}
-                          {enquiry.productId.variants.length > 2 && (
-                            <p className="text-sm text-gray-500 text-center">
-                              +{enquiry.productId.variants.length - 2} more variants
-                            </p>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-600 uppercase tracking-wide">{enquiry.productId.brand}</p>
+                          <h3 className="text-xl font-bold text-gray-900 mt-1 line-clamp-2">{enquiry.productId.name}</h3>
+                          {enquiry.productId.isFeature && (
+                            <Badge variant="secondary" className="mt-2 bg-yellow-100 text-yellow-800">
+                              <Star className="w-3 h-3 mr-1" />
+                              Featured
+                            </Badge>
                           )}
                         </div>
-                      </div>
 
-                      {/* Product Description */}
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
-                        <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">{enquiry.productId.description}</p>
-                      </div>
-
-                      {/* Key Features */}
-                      {enquiry.productId.points.length > 0 && (
                         <div>
-                          <h4 className="font-semibold text-gray-900 mb-2">Key Features</h4>
-                          <ul className="space-y-1">
-                            {enquiry.productId.points.slice(0, 3).map((point, pointIndex) => (
-                              <li key={pointIndex} className="flex items-start gap-2 text-sm text-gray-700">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                                {point}
-                              </li>
+                          <h4 className="font-semibold text-gray-900 mb-2">Available Variants</h4>
+                          <div className="space-y-2">
+                            {enquiry.variants.slice(0, 2).map((variant, variantIndex) => (
+                              <div key={variant._id} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                                <div>
+                                  <p className="font-medium text-gray-900 text-sm">Variant {variantIndex + 1}</p>
+                                  <p className="text-xs text-gray-600">Qty: {variant.quantity}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-lg font-bold text-green-600">₹{variant.price.toLocaleString()}</p>
+                                </div>
+                              </div>
                             ))}
-                            {enquiry.productId.points.length > 3 && (
-                              <li className="text-sm text-gray-500">
-                                +{enquiry.productId.points.length - 3} more features
-                              </li>
+                            {enquiry.variants.length > 2 && (
+                              <p className="text-sm text-gray-500 text-center">
+                                +{enquiry.variants.length - 2} more variants
+                              </p>
                             )}
-                          </ul>
+                          </div>
                         </div>
-                      )}
+
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                          <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">{enquiry.productId.description}</p>
+                        </div>
+
+                        {enquiry.productId.points.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2">Key Features</h4>
+                            <ul className="space-y-1">
+                              {enquiry.productId.points.slice(0, 3).map((point, pointIndex) => (
+                                <li key={pointIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                                  {point}
+                                </li>
+                              ))}
+                              {enquiry.productId.points.length > 3 && (
+                                <li className="text-sm text-gray-500">
+                                  +{enquiry.productId.points.length - 3} more features
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
