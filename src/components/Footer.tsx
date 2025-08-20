@@ -68,7 +68,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Product Categories */}
+          {/* Product Categories
           <div>
             <h3 className="text-lg font-semibold mb-4 text-yellow-300">Categories</h3>
             <ul className="space-y-2">
@@ -93,7 +93,7 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Contact Info */}
           <div>
