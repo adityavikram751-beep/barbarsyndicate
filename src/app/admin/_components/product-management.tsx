@@ -9,15 +9,15 @@ import { EditProduct } from "./product-manage/EditProduct";
 import { DeleteProduct } from "./product-manage/DeleteProduct";
 
 interface Product {
-  id: string; // Changed to string to match _id from API
-  name: string;
-  image: string;
-  description: string;
+  id: number
+  name: string
+  image: string
+  description: string
   pricing: {
-    single: number;
-    dozen: number;
-    carton: number;
-  };
+    single: number
+    dozen: number
+    carton: number
+  }
 }
 
 
@@ -42,7 +42,7 @@ interface ApiResponse {
 }
 
 export function ProductManagement() {
-  const [products, setProducts] = useState<Product[]>([]);
+ const [products, setProducts] = useState<Product[]>([])
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -85,9 +85,10 @@ export function ProductManagement() {
     fetchProducts();
   }, [currentPage]);
 
+   // Add product callback
   const handleAddProduct = (newProduct: Product) => {
-    setProducts([...products, newProduct]);
-  };
+    setProducts((prev) => [newProduct, ...prev])
+  }
 
   const handleEditProduct = (updatedProduct: Product) => {
     setProducts(products.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)));
@@ -110,9 +111,7 @@ export function ProductManagement() {
           <h1 className="text-3xl font-bold text-rose-900">Product Management</h1>
           <p className="text-rose-600">Manage your cosmetic product catalog</p>
         </div>
-        <AddProduct onAddProduct={function (product: Product): void {
-          throw new Error("Function not implemented.");
-        } } />
+        <AddProduct onAddProduct={handleAddProduct} />
       </div>
 
       {loading && <p className="text-rose-700">Loading products...</p>}
