@@ -16,7 +16,7 @@ import {
 import { Plus } from "lucide-react"
 
 interface Product {
-  id: number
+  id: string
   name: string
   image: string
   description: string
@@ -25,6 +25,12 @@ interface Product {
     dozen: number
     carton: number
   }
+  brand?: string
+  categoryId?: string
+  points?: string[]
+  isFeature?: boolean
+  variants?: { price: string; quantity: string }[]
+  images?: string[]
 }
 
 interface Category {
@@ -226,7 +232,7 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
 
       if (res.ok) {
         const newProduct: Product = {
-          id: Date.now(), // Consider using result.id if server returns it
+          id: result._id || crypto.randomUUID(), // Use server-provided ID or generate a UUID
           name: formData.name,
           image: result.image || imagePreviews[0] || "/placeholder.svg?height=100&width=100",
           description: formData.description,
@@ -235,6 +241,12 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
             dozen: parseFloat(cleanedVariants[1]?.price) || 0,
             carton: parseFloat(cleanedVariants[2]?.price) || 0,
           },
+          brand: formData.brand,
+          categoryId: formData.categoryId,
+          points: pointsArray,
+          isFeature: formData.isFeature,
+          variants: cleanedVariants,
+          images: result.images || imagePreviews,
         }
         onAddProduct(newProduct)
         setIsOpen(false)
@@ -376,22 +388,20 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
               <div className="flex gap-2 mt-2 flex-wrap">
                 {imagePreviews.map((preview, index) => (
                   <div key={index} className="relative w-20 h-20">
-                <div className="relative w-20 h-20">
-  <Image
-    src={preview}
-    alt="Preview"
-    layout="fill"
-    objectFit="contain"
-    className="rounded-md border"
-  />
-  <button
-    type="button"
-    onClick={() => handleRemoveImage(index)}
-    className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"
-  >
-    ✖
-  </button>
-</div>
+                    <Image
+                      src={preview}
+                      alt="Preview"
+                      layout="fill"
+                      objectFit="contain"
+                      className="rounded-md border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"
+                    >
+                      ✖
+                    </button>
                   </div>
                 ))}
               </div>

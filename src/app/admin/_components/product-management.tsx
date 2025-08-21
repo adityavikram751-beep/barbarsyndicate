@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,17 +10,22 @@ import { EditProduct } from "./product-manage/EditProduct";
 import { DeleteProduct } from "./product-manage/DeleteProduct";
 
 interface Product {
-  id: number
-  name: string
-  image: string
-  description: string
+  id: string;
+  name: string;
+  image: string;
+  description: string;
   pricing: {
-    single: number
-    dozen: number
-    carton: number
-  }
+    single: number;
+    dozen: number;
+    carton: number;
+  };
+  brand?: string;
+  categoryId?: string;
+  points?: string[];
+  isFeature?: boolean;
+  variants?: { price: string; quantity: string }[];
+  images?: string[];
 }
-
 
 interface ApiProduct {
   _id: string;
@@ -31,6 +37,10 @@ interface ApiProduct {
     quantity: string;
     _id: string;
   }[];
+  brand: string;
+  categoryId: string;
+  points: string[];
+  isFeature: boolean;
 }
 
 interface ApiResponse {
@@ -42,7 +52,7 @@ interface ApiResponse {
 }
 
 export function ProductManagement() {
- const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<Product[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -63,13 +73,19 @@ export function ProductManagement() {
         const mappedProducts: Product[] = data.products.map((apiProduct) => ({
           id: apiProduct._id,
           name: apiProduct.name,
-          image: apiProduct.images[0] || "/placeholder.svg", // Use first image or fallback
+          image: apiProduct.images[0] || "/placeholder.svg",
           description: apiProduct.description,
           pricing: {
             single: parseFloat(apiProduct.variants.find(v => v.quantity === "1")?.price || "0"),
             dozen: parseFloat(apiProduct.variants.find(v => v.quantity === "12Pcs")?.price || "0"),
-            carton: parseFloat(apiProduct.variants.find(v => v.quantity === "Carter")?.price || "0"),
+            carton: parseFloat(apiProduct.variants.find(v => v.quantity === "Carton")?.price || "0"),
           },
+          brand: apiProduct.brand,
+          categoryId: apiProduct.categoryId,
+          points: apiProduct.points || [],
+          isFeature: apiProduct.isFeature || false,
+          variants: apiProduct.variants,
+          images: apiProduct.images
         }));
 
         setProducts(mappedProducts);
@@ -85,17 +101,23 @@ export function ProductManagement() {
     fetchProducts();
   }, [currentPage]);
 
-   // Add product callback
+  // Add product callback
   const handleAddProduct = (newProduct: Product) => {
-    setProducts((prev) => [newProduct, ...prev])
-  }
-
-  const handleEditProduct = (updatedProduct: Product) => {
-    setProducts(products.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)));
+    setProducts((prev) => [newProduct, ...prev]);
   };
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts(products.filter((p) => p.id !== id));
+  // Update product callback
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts((prev) =>
+      prev.map((product) =>
+        product.id === updatedProduct.id ? updatedProduct : product
+      )
+    );
+  };
+
+  // Delete product callback
+  const handleDeleteProduct = (productId: string) => {
+    setProducts((prev) => prev.filter((product) => product.id !== productId));
   };
 
   const handlePageChange = (page: number) => {
@@ -149,18 +171,22 @@ export function ProductManagement() {
                           height={50}
                           className="rounded-lg"
                         />
-                        <span className="font-medium text-rose-900">{product.name}</span>
+                        <span className="font-medium text-rose-900">
+                          {product.name.split(" ").slice(0, 5).join(" ")}
+                          {product.name.split(" ").length > 5 ? "..." : ""}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-rose-700 hidden md:table-cell max-w-xs truncate">
-                      {product.description}
+                      {product.description.split(" ").slice(0, 10).join(" ")}
+                      {product.description.split(" ").length > 10 ? "..." : ""}
                     </TableCell>
                     <TableCell className="text-rose-700">${product.pricing.single.toFixed(2)}</TableCell>
                     <TableCell className="text-rose-700">${product.pricing.dozen.toFixed(2)}</TableCell>
                     <TableCell className="text-rose-700">${product.pricing.carton.toFixed(2)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <EditProduct product={product} onEditProduct={handleEditProduct} />
+                        <EditProduct product={product} onUpdateProduct={handleUpdateProduct} />
                         <DeleteProduct productId={product.id} onDeleteProduct={handleDeleteProduct} />
                       </div>
                     </TableCell>

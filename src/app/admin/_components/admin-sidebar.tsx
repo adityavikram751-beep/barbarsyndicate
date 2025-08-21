@@ -30,10 +30,17 @@ const menuItems = [
     icon: Package,
     id: "category",
   },
+
+
   {
     title: "User Enquiry",
     icon: Users,
     id: "user-enquiry",
+  },
+  {
+    title: "Brands",
+    icon: BarChart3,
+    id: "brands",
   },
 
   {

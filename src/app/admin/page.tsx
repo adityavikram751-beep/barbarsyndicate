@@ -5,12 +5,11 @@ import { useState, useEffect } from "react"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AdminSidebar } from "./_components/admin-sidebar"
 import { UserRequests } from "./_components/user-requests"
-import { Settings } from "./_components/settings"
 import { ProductManagement } from "./_components/product-management"
 import Category from "./_components/category"
 import UserEnquiry from "./_components/UserEnquiry"
 import AdminLogin from "./login/page"
-
+import Brands from "./_components/brands"
 
 
 
@@ -48,12 +47,13 @@ export default function AdminPanel() {
 
       case "category":
         return <Category />
+         case "brands":
+        return <Brands />
 
       case "user-enquiry":
         return <UserEnquiry />
 
-      case "settings":
-        return <Settings />
+   
       default:
         return <ProductManagement />
     }
