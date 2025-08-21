@@ -43,11 +43,11 @@ const menuItems = [
     id: "brands",
   },
 
-  {
-    title: "Settings",
-    icon: Settings,
-    id: "settings",
-  },
+  // {
+  //   title: "Settings",
+  //   icon: Settings,
+  //   id: "settings",
+  // },
 ]
 
 interface AdminSidebarProps {

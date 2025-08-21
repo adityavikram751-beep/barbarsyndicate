@@ -269,7 +269,7 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
           Add Product
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-rose-200 max-w-md">
+      <DialogContent className="border-rose-200 max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-rose-900">Add New Product</DialogTitle>
           <DialogDescription>Create a new product in your catalog</DialogDescription>

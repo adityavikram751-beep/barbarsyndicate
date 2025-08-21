@@ -3,7 +3,6 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import Image from "next/image"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
@@ -18,7 +17,6 @@ import { Edit2 } from "lucide-react"
 interface Product {
   id: string
   name: string
-  image: string
   description: string
   pricing: {
     single: number
@@ -67,8 +65,6 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
     isFeature: false,
   })
   const [variants, setVariants] = useState<Variant[]>([{ price: "", quantity: "" }])
-  const [images, setImages] = useState<File[]>([])
-  const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -84,11 +80,11 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
       points: "",
       isFeature: false,
     })
-    setImagePreviews([product.image])
+
     setVariants([
       { price: product.pricing.single.toString(), quantity: "1" },
-      { price: product.pricing.dozen.toString(), quantity: "12" },
-      { price: product.pricing.carton.toString(), quantity: "24" },
+      { price: product.pricing.dozen.toString(), quantity: "12pcs" },
+      { price: product.pricing.carton.toString(), quantity: "carter" },
     ])
   }, [product])
 
@@ -126,22 +122,13 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
     fetchBrands()
   }, [])
 
-  // Clean up image previews
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach((url) => URL.revokeObjectURL(url))
-    }
-  }, [imagePreviews])
-
   // Reset form when dialog is closed
   useEffect(() => {
     if (!isOpen) {
-      setImages([])
-      setImagePreviews([product.image])
       setVariants([
         { price: product.pricing.single.toString(), quantity: "1" },
-        { price: product.pricing.dozen.toString(), quantity: "12" },
-        { price: product.pricing.carton.toString(), quantity: "24" },
+        { price: product.pricing.dozen.toString(), quantity: "12pcs" },
+        { price: product.pricing.carton.toString(), quantity: "carter" },
       ])
       setFormData({
         name: product.name,
@@ -155,32 +142,12 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
     }
   }, [isOpen, product])
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (images.length + files.length > 5) {
-      setError("You can only upload a maximum of 5 images")
-      return
-    }
-    setImages((prev) => [...prev, ...files])
-    setImagePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))])
-    setError(null)
-  }
-
-  const handleRemoveImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index))
-    setImagePreviews((prev) => {
-      const url = prev[index]
-      URL.revokeObjectURL(url)
-      return prev.filter((_, i) => i !== index)
-    })
-  }
-
   const addVariant = () => {
     setVariants([...variants, { price: "", quantity: "" }])
   }
 
   const updateVariant = (index: number, field: keyof Variant, value: string) => {
-    if ((field === "price" || field === "quantity") && value && !/^\d*\.?\d*$/.test(value)) {
+    if (field === "price" && value && !/^\d*\.?\d*$/.test(value)) {
       return
     }
     const updated = [...variants]
@@ -197,10 +164,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
       setError("Please fill in all required fields (Name, Category, Brand).")
       return
     }
-    if (imagePreviews.length === 0 && images.length === 0) {
-      setError("Please add at least one image (max 5).")
-      return
-    }
+
     const cleanedVariants = variants.filter((v) => v.price && v.quantity)
     if (cleanedVariants.length === 0) {
       setError("Please add at least one valid variant with price and quantity.")
@@ -216,47 +180,51 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
         return
       }
 
-      const data = new FormData()
-      data.append("name", formData.name)
-      data.append("description", formData.description)
-      data.append("categoryId", formData.categoryId)
-      data.append("brand", formData.brand)
-      data.append("isFeature", formData.isFeature ? "true" : "false")
-      const pointsArray =
-        formData.points && formData.points.trim() !== ""
-          ? formData.points.split("\n").map((s) => s.trim()).filter(Boolean)
-          : []
-      data.append("points", JSON.stringify(pointsArray))
-      data.append("variants", JSON.stringify(cleanedVariants))
-      images.forEach((img) => data.append("image", img))
+      // Handle points
+      const pointsArray = formData.points && formData.points.trim() !== ""
+        ? formData.points.split("\n").map((s) => s.trim()).filter(Boolean)
+        : []
+
+      const jsonPayload = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        categoryId: formData.categoryId,
+        brand: formData.brand,
+        isFeature: formData.isFeature,
+        points: pointsArray,
+        variants: cleanedVariants
+      }
 
       const res = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/${product.id}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-        body: data,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonPayload),
       })
 
       const result = await res.json()
-      if (res.ok) {
+
+      if (res.ok && result.success) {
         const updatedProduct: Product = {
           id: product.id,
           name: formData.name,
-          image: result.image || imagePreviews[0] || product.image,
           description: formData.description,
           pricing: {
-            single: parseFloat(cleanedVariants[0]?.price) || product.pricing.single,
-            dozen: parseFloat(cleanedVariants[1]?.price) || product.pricing.dozen,
-            carton: parseFloat(cleanedVariants[2]?.price) || product.pricing.carton,
+            single: parseFloat(cleanedVariants.find(v => v.quantity === "1")?.price || "0"),
+            dozen: parseFloat(cleanedVariants.find(v => v.quantity === "12pcs")?.price || "0"),
+            carton: parseFloat(cleanedVariants.find(v => v.quantity === "carter")?.price || "0"),
           },
         }
         onUpdateProduct(updatedProduct)
         setIsOpen(false)
       } else {
-        setError(result.message || "Failed to update product")
+        setError(result.message || `Failed to update product: ${res.status} ${res.statusText}`)
       }
     } catch (err) {
       console.error("Error updating product:", err)
-      setError("Error updating product. Please try again.")
+      setError("Network error. Please check your connection and try again.")
     } finally {
       setUploading(false)
     }
@@ -270,16 +238,15 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
           Edit Product
         </Button>
       </DialogTrigger>
-    <DialogContent className="border-rose-200 max-w-3xl w-full">
-
+      <DialogContent className="border-rose-200 max-w-3xl w-full">
         <DialogHeader>
           <DialogTitle className="text-rose-900">Edit Product</DialogTitle>
           <DialogDescription>Update product details</DialogDescription>
         </DialogHeader>
-          <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-4">
-          {error && <div className="text-red-500 text-sm">{error}</div>}
+        <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-4">
+          {error && <div className="text-red-500 text-sm bg-red-50 p-3 rounded-md">{error}</div>}
           <div>
-            <Label htmlFor="name">Product Name</Label>
+            <Label htmlFor="name">Product Name *</Label>
             <Input
               id="name"
               value={formData.name}
@@ -288,7 +255,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
             />
           </div>
           <div>
-            <Label htmlFor="brand">Brand</Label>
+            <Label htmlFor="brand">Brand *</Label>
             <select
               id="brand"
               value={formData.brand}
@@ -313,7 +280,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
             />
           </div>
           <div>
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">Category *</Label>
             <select
               id="category"
               value={formData.categoryId}
@@ -350,8 +317,8 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
                   onChange={(e) => updateVariant(i, "price", e.target.value)}
                 />
                 <Input
-                  type="string"
-                  placeholder="Quantity"
+                  type="text"
+                  placeholder="Quantity (e.g., 1, 12pcs, carter)"
                   value={v.quantity}
                   onChange={(e) => updateVariant(i, "quantity", e.target.value)}
                 />
@@ -370,38 +337,6 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
             <Button type="button" onClick={addVariant} className="mt-2">
               + Add Variant
             </Button>
-          </div>
-          <div>
-            <Label htmlFor="images">Upload Images (Max 5)</Label>
-            <Input
-              id="images"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-            />
-            {imagePreviews.length > 0 && (
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative w-20 h-20">
-                    <Image
-                      src={preview}
-                      alt="Preview"
-                      layout="fill"
-                      objectFit="contain"
-                      className="rounded-md border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(index)}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"
-                    >
-                      ✖
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
           <Button
             onClick={handleSubmit}

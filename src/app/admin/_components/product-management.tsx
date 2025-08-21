@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Package } from "lucide-react";
-import Image from "next/image";
 import { AddProduct } from "./product-manage/AddProduct";
 import { EditProduct } from "./product-manage/EditProduct";
 import { DeleteProduct } from "./product-manage/DeleteProduct";
@@ -12,7 +11,6 @@ import { DeleteProduct } from "./product-manage/DeleteProduct";
 interface Product {
   id: string;
   name: string;
-  image: string;
   description: string;
   pricing: {
     single: number;
@@ -58,7 +56,6 @@ export function ProductManagement() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch products from the API
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
@@ -68,12 +65,9 @@ export function ProductManagement() {
           throw new Error("Failed to fetch products");
         }
         const data: ApiResponse = await response.json();
-        
-        // Map API data to Product interface
         const mappedProducts: Product[] = data.products.map((apiProduct) => ({
           id: apiProduct._id,
           name: apiProduct.name,
-          image: apiProduct.images[0] || "/placeholder.svg",
           description: apiProduct.description,
           pricing: {
             single: parseFloat(apiProduct.variants.find(v => v.quantity === "1")?.price || "0"),
@@ -85,9 +79,8 @@ export function ProductManagement() {
           points: apiProduct.points || [],
           isFeature: apiProduct.isFeature || false,
           variants: apiProduct.variants,
-          images: apiProduct.images
+          images: apiProduct.images || [],
         }));
-
         setProducts(mappedProducts);
         setTotalPages(data.totalPages);
       } catch (err) {
@@ -97,16 +90,13 @@ export function ProductManagement() {
         setLoading(false);
       }
     };
-
     fetchProducts();
   }, [currentPage]);
 
-  // Add product callback
   const handleAddProduct = (newProduct: Product) => {
     setProducts((prev) => [newProduct, ...prev]);
   };
 
-  // Update product callback
   const handleUpdateProduct = (updatedProduct: Product) => {
     setProducts((prev) =>
       prev.map((product) =>
@@ -115,7 +105,6 @@ export function ProductManagement() {
     );
   };
 
-  // Delete product callback
   const handleDeleteProduct = (productId: string) => {
     setProducts((prev) => prev.filter((product) => product.id !== productId));
   };
@@ -135,68 +124,27 @@ export function ProductManagement() {
         </div>
         <AddProduct onAddProduct={handleAddProduct} />
       </div>
-
       {loading && <p className="text-rose-700">Loading products...</p>}
       {error && <p className="text-red-500">{error}</p>}
-
       <Card className="border-rose-200 bg-white/70 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-rose-900 flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Product Catalog
+            <Package className="h-5 w-5" />Product Catalog
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-rose-200">
-                  <TableHead className="text-rose-700">Product</TableHead>
-                  <TableHead className="text-rose-700 hidden md:table-cell">Description</TableHead>
-                  <TableHead className="text-rose-700">1 pc</TableHead>
-                  <TableHead className="text-rose-700">12 pcs</TableHead>
-                  <TableHead className="text-rose-700">Carton</TableHead>
-                  <TableHead className="text-rose-700">Actions</TableHead>
-                </TableRow>
+                <TableRow className="border-rose-200"><TableHead className="text-rose-700">Image</TableHead><TableHead className="text-rose-700">Product</TableHead><TableHead className="text-rose-700 hidden md:table-cell">Description</TableHead><TableHead className="text-rose-700">1 pc</TableHead><TableHead className="text-rose-700">12 pcs</TableHead><TableHead className="text-rose-700">Carton</TableHead><TableHead className="text-rose-700">Actions</TableHead></TableRow>
               </TableHeader>
               <TableBody>
                 {products.map((product) => (
-                  <TableRow key={product.id} className="border-rose-200">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          width={50}
-                          height={50}
-                          className="rounded-lg"
-                        />
-                        <span className="font-medium text-rose-900">
-                          {product.name.split(" ").slice(0, 5).join(" ")}
-                          {product.name.split(" ").length > 5 ? "..." : ""}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-rose-700 hidden md:table-cell max-w-xs truncate">
-                      {product.description.split(" ").slice(0, 10).join(" ")}
-                      {product.description.split(" ").length > 10 ? "..." : ""}
-                    </TableCell>
-                    <TableCell className="text-rose-700">${product.pricing.single.toFixed(2)}</TableCell>
-                    <TableCell className="text-rose-700">${product.pricing.dozen.toFixed(2)}</TableCell>
-                    <TableCell className="text-rose-700">${product.pricing.carton.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <EditProduct product={product} onUpdateProduct={handleUpdateProduct} />
-                        <DeleteProduct productId={product.id} onDeleteProduct={handleDeleteProduct} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <TableRow key={product.id} className="border-rose-200"><TableCell>{product.images && product.images.length > 0 ? (<img src={product.images[0]} alt={product.name} className="w-16 h-16 object-cover rounded" />) : (<span className="text-rose-700">No Image</span>)}</TableCell><TableCell><span className="font-medium text-rose-900">{product.name.split(" ").slice(0, 5).join(" ")}{product.name.split(" ").length > 5 ? "..." : ""}</span></TableCell><TableCell className="text-rose-700 hidden md:table-cell max-w-xs truncate">{product.description.split(" ").slice(0, 10).join(" ")}{product.description.split(" ").length > 10 ? "..." : ""}</TableCell><TableCell className="text-rose-700">${product.pricing.single.toFixed(2)}</TableCell><TableCell className="text-rose-700">${product.pricing.dozen.toFixed(2)}</TableCell><TableCell className="text-rose-700">${product.pricing.carton.toFixed(2)}</TableCell><TableCell><div className="flex gap-2"><EditProduct product={product} onUpdateProduct={handleUpdateProduct} /><DeleteProduct productId={product.id} onDeleteProduct={handleDeleteProduct} /></div></TableCell></TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
-
-          {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-4">
               <button
