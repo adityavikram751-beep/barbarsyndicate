@@ -14,11 +14,7 @@ import {
 } from "@/components/ui/sidebar"
 
 const menuItems = [
-  {
-    title: "Dashboard",
-    icon: BarChart3,
-    id: "dashboard",
-  },
+
   {
     title: "User Requests",
     icon: UserCheck,
@@ -29,11 +25,17 @@ const menuItems = [
     icon: Package,
     id: "products",
   },
-  {
-    title: "User Management",
-    icon: Users,
-    id: "users",
+   {
+    title: "Category Management",
+    icon: Package,
+    id: "category",
   },
+  {
+    title: "User Enquiry",
+    icon: Users,
+    id: "user-enquiry",
+  },
+
   {
     title: "Settings",
     icon: Settings,

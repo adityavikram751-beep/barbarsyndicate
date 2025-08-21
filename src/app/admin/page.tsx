@@ -1,34 +1,67 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AdminSidebar } from "./_components/admin-sidebar"
-import { Dashboard } from "./_components/dashboard"
-import { ProductManagement } from "./_components/product-management"
 import { UserRequests } from "./_components/user-requests"
-import { UserManagement } from "./_components/user-management"
 import { Settings } from "./_components/settings"
+import { ProductManagement } from "./_components/product-management"
+import Category from "./_components/category"
+import UserEnquiry from "./_components/UserEnquiry"
+import AdminLogin from "./login/page"
+
+
 
 
 export default function AdminPanel() {
   const [activeSection, setActiveSection] = useState("dashboard")
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken")
+    if (token) {
+      setIsAuthenticated(true)
+    } else {
+      setIsAuthenticated(false)
+    }
+  }, [])
+
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true)
+    setActiveSection("dashboard")
+  }
+
+
 
   const renderContent = () => {
     switch (activeSection) {
-      case "dashboard":
-        return <Dashboard />
+
+
+    
       case "user-requests":
         return <UserRequests />
+
       case "products":
         return <ProductManagement />
-      case "users":
-        return <UserManagement />
+
+      case "category":
+        return <Category />
+
+      case "user-enquiry":
+        return <UserEnquiry />
+
       case "settings":
         return <Settings />
       default:
-        return <Dashboard />
+        return <ProductManagement />
     }
+  }
+
+
+  if (!isAuthenticated) {
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} />
   }
 
   return (

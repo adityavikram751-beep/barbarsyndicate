@@ -1,117 +1,107 @@
-"use client"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Edit, Trash2, Package } from "lucide-react"
-import Image from "next/image"
+"use client";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Package } from "lucide-react";
+import Image from "next/image";
+import { AddProduct } from "./product-manage/AddProduct";
+import { EditProduct } from "./product-manage/EditProduct";
+import { DeleteProduct } from "./product-manage/DeleteProduct";
 
 interface Product {
-  id: number
-  name: string
-  image: string
-  description: string
+  id: string; // Changed to string to match _id from API
+  name: string;
+  image: string;
+  description: string;
   pricing: {
-    single: number
-    dozen: number
-    carton: number
-  }
+    single: number;
+    dozen: number;
+    carton: number;
+  };
 }
 
-const initialProducts: Product[] = [
-  {
-    id: 1,
-    name: "Rose Gold Lipstick Set",
-    image: "/placeholder.svg?height=100&width=100",
-    description: "Premium rose gold lipstick collection with 12 stunning shades",
-    pricing: { single: 25.99, dozen: 280.0, carton: 1200.0 },
-  },
-  {
-    id: 2,
-    name: "Hydrating Face Serum",
-    image: "/placeholder.svg?height=100&width=100",
-    description: "Advanced hydrating serum with hyaluronic acid and vitamin C",
-    pricing: { single: 45.99, dozen: 520.0, carton: 2200.0 },
-  },
-]
+
+interface ApiProduct {
+  _id: string;
+  name: string;
+  images: string[];
+  description: string;
+  variants: {
+    price: string;
+    quantity: string;
+    _id: string;
+  }[];
+}
+
+interface ApiResponse {
+  success: boolean;
+  currentPage: number;
+  totalPages: number;
+  totalResults: number;
+  products: ApiProduct[];
+}
 
 export function ProductManagement() {
-  const [products, setProducts] = useState<Product[]>(initialProducts)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    single: "",
-    dozen: "",
-    carton: "",
-  })
+  const [products, setProducts] = useState<Product[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddProduct = () => {
-    const newProduct: Product = {
-      id: Date.now(),
-      name: formData.name,
-      image: "/placeholder.svg?height=100&width=100",
-      description: formData.description,
-      pricing: {
-        single: Number.parseFloat(formData.single),
-        dozen: Number.parseFloat(formData.dozen),
-        carton: Number.parseFloat(formData.carton),
-      },
+  // Fetch products from the API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product?page=${currentPage}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+        const data: ApiResponse = await response.json();
+        
+        // Map API data to Product interface
+        const mappedProducts: Product[] = data.products.map((apiProduct) => ({
+          id: apiProduct._id,
+          name: apiProduct.name,
+          image: apiProduct.images[0] || "/placeholder.svg", // Use first image or fallback
+          description: apiProduct.description,
+          pricing: {
+            single: parseFloat(apiProduct.variants.find(v => v.quantity === "1")?.price || "0"),
+            dozen: parseFloat(apiProduct.variants.find(v => v.quantity === "12Pcs")?.price || "0"),
+            carton: parseFloat(apiProduct.variants.find(v => v.quantity === "Carter")?.price || "0"),
+          },
+        }));
+
+        setProducts(mappedProducts);
+        setTotalPages(data.totalPages);
+      } catch (err) {
+        setError("Error fetching products. Please try again.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [currentPage]);
+
+  const handleAddProduct = (newProduct: Product) => {
+    setProducts([...products, newProduct]);
+  };
+
+  const handleEditProduct = (updatedProduct: Product) => {
+    setProducts(products.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)));
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    setProducts(products.filter((p) => p.id !== id));
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
     }
-    setProducts([...products, newProduct])
-    setFormData({ name: "", description: "", single: "", dozen: "", carton: "" })
-    setIsAddDialogOpen(false)
-  }
-
-  const handleEditProduct = () => {
-    if (!editingProduct) return
-
-    const updatedProducts = products.map((p) =>
-      p.id === editingProduct.id
-        ? {
-            ...p,
-            name: formData.name,
-            description: formData.description,
-            pricing: {
-              single: Number.parseFloat(formData.single),
-              dozen: Number.parseFloat(formData.dozen),
-              carton: Number.parseFloat(formData.carton),
-            },
-          }
-        : p,
-    )
-    setProducts(updatedProducts)
-    setEditingProduct(null)
-    setFormData({ name: "", description: "", single: "", dozen: "", carton: "" })
-  }
-
-  const handleDeleteProduct = (id: number) => {
-    setProducts(products.filter((p) => p.id !== id))
-  }
-
-  const openEditDialog = (product: Product) => {
-    setEditingProduct(product)
-    setFormData({
-      name: product.name,
-      description: product.description,
-      single: product.pricing.single.toString(),
-      dozen: product.pricing.dozen.toString(),
-      carton: product.pricing.carton.toString(),
-    })
-  }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -120,86 +110,13 @@ export function ProductManagement() {
           <h1 className="text-3xl font-bold text-rose-900">Product Management</h1>
           <p className="text-rose-600">Manage your cosmetic product catalog</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-rose-600 hover:bg-rose-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="border-rose-200 max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-rose-900">Add New Product</DialogTitle>
-              <DialogDescription>Create a new product in your catalog</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="text-rose-700">
-                  Product Name
-                </Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="border-rose-200 focus:border-rose-400"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description" className="text-rose-700">
-                  Description
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="border-rose-200 focus:border-rose-400"
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label htmlFor="single" className="text-rose-700">
-                    1 pc ($)
-                  </Label>
-                  <Input
-                    id="single"
-                    type="number"
-                    value={formData.single}
-                    onChange={(e) => setFormData({ ...formData, single: e.target.value })}
-                    className="border-rose-200 focus:border-rose-400"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dozen" className="text-rose-700">
-                    12 pcs ($)
-                  </Label>
-                  <Input
-                    id="dozen"
-                    type="number"
-                    value={formData.dozen}
-                    onChange={(e) => setFormData({ ...formData, dozen: e.target.value })}
-                    className="border-rose-200 focus:border-rose-400"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="carton" className="text-rose-700">
-                    Carton ($)
-                  </Label>
-                  <Input
-                    id="carton"
-                    type="number"
-                    value={formData.carton}
-                    onChange={(e) => setFormData({ ...formData, carton: e.target.value })}
-                    className="border-rose-200 focus:border-rose-400"
-                  />
-                </div>
-              </div>
-              <Button onClick={handleAddProduct} className="w-full bg-rose-600 hover:bg-rose-700">
-                Add Product
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <AddProduct onAddProduct={function (product: Product): void {
+          throw new Error("Function not implemented.");
+        } } />
       </div>
+
+      {loading && <p className="text-rose-700">Loading products...</p>}
+      {error && <p className="text-red-500">{error}</p>}
 
       <Card className="border-rose-200 bg-white/70 backdrop-blur-sm">
         <CardHeader>
@@ -227,7 +144,7 @@ export function ProductManagement() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Image
-                          src={product.image || "/placeholder.svg"}
+                          src={product.image}
                           alt={product.name}
                           width={50}
                           height={50}
@@ -239,100 +156,13 @@ export function ProductManagement() {
                     <TableCell className="text-rose-700 hidden md:table-cell max-w-xs truncate">
                       {product.description}
                     </TableCell>
-                    <TableCell className="text-rose-700">${product.pricing.single}</TableCell>
-                    <TableCell className="text-rose-700">${product.pricing.dozen}</TableCell>
-                    <TableCell className="text-rose-700">${product.pricing.carton}</TableCell>
+                    <TableCell className="text-rose-700">${product.pricing.single.toFixed(2)}</TableCell>
+                    <TableCell className="text-rose-700">${product.pricing.dozen.toFixed(2)}</TableCell>
+                    <TableCell className="text-rose-700">${product.pricing.carton.toFixed(2)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Dialog
-                          open={editingProduct?.id === product.id}
-                          onOpenChange={(open) => !open && setEditingProduct(null)}
-                        >
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEditDialog(product)}
-                              className="border-rose-300 text-rose-700 hover:bg-rose-50"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="border-rose-200 max-w-md">
-                            <DialogHeader>
-                              <DialogTitle className="text-rose-900">Edit Product</DialogTitle>
-                              <DialogDescription>Update product information</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label htmlFor="edit-name" className="text-rose-700">
-                                  Product Name
-                                </Label>
-                                <Input
-                                  id="edit-name"
-                                  value={formData.name}
-                                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                  className="border-rose-200 focus:border-rose-400"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="edit-description" className="text-rose-700">
-                                  Description
-                                </Label>
-                                <Textarea
-                                  id="edit-description"
-                                  value={formData.description}
-                                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                  className="border-rose-200 focus:border-rose-400"
-                                />
-                              </div>
-                              <div className="grid grid-cols-3 gap-2">
-                                <div>
-                                  <Label htmlFor="edit-single" className="text-rose-700">
-                                    1 pc ($)
-                                  </Label>
-                                  <Input
-                                    id="edit-single"
-                                    type="number"
-                                    value={formData.single}
-                                    onChange={(e) => setFormData({ ...formData, single: e.target.value })}
-                                    className="border-rose-200 focus:border-rose-400"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="edit-dozen" className="text-rose-700">
-                                    12 pcs ($)
-                                  </Label>
-                                  <Input
-                                    id="edit-dozen"
-                                    type="number"
-                                    value={formData.dozen}
-                                    onChange={(e) => setFormData({ ...formData, dozen: e.target.value })}
-                                    className="border-rose-200 focus:border-rose-400"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="edit-carton" className="text-rose-700">
-                                    Carton ($)
-                                  </Label>
-                                  <Input
-                                    id="edit-carton"
-                                    type="number"
-                                    value={formData.carton}
-                                    onChange={(e) => setFormData({ ...formData, carton: e.target.value })}
-                                    className="border-rose-200 focus:border-rose-400"
-                                  />
-                                </div>
-                              </div>
-                              <Button onClick={handleEditProduct} className="w-full bg-rose-600 hover:bg-rose-700">
-                                Update Product
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        <Button size="sm" variant="destructive" onClick={() => handleDeleteProduct(product.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <EditProduct product={product} onEditProduct={handleEditProduct} />
+                        <DeleteProduct productId={product.id} onDeleteProduct={handleDeleteProduct} />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -340,8 +170,31 @@ export function ProductManagement() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-rose-100 text-rose-700 rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2 text-rose-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-rose-100 text-rose-700 rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

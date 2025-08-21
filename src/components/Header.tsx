@@ -101,12 +101,12 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
       <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-  <div className="relative w-8 h-8  rounded-lg flex items-center justify-center">
+  <div className="relative rounded-lg flex items-center justify-center">
     <Image
       src="/logo.png"
       alt="Logo"
-      width={32}
-      height={32}
+      width={70}
+      height={50}
       className="object-cover rounded-lg"
     />
   </div>
