@@ -1,91 +1,118 @@
-"use client"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+"use client";
+
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Trash2 } from "lucide-react"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface DeleteProductProps {
-  productId: string
-  onDeleteProduct?: (productId: string) => void
+  productId: string;
+  productName: string;
+  onDeleteProduct: (productId: string) => void;
 }
 
-export function DeleteProduct({ productId, onDeleteProduct }: DeleteProductProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function DeleteProduct({
+  productId,
+  productName,
+  onDeleteProduct,
+}: DeleteProductProps) {
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleDelete = async () => {
+    setIsLoading(true);
     try {
-      setDeleting(true)
-      setError(null)
-      const token = localStorage.getItem("adminToken")
-      if (!token) {
-        setError("Authentication token not found. Please log in.")
-        return
+      const adminToken = localStorage.getItem("adminToken");
+      
+      if (!adminToken) {
+        throw new Error("Authentication required. Please log in.");
       }
 
-      const res = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/${productId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      const result = await res.json()
-      if (res.ok) {
-        if (onDeleteProduct) {
-          onDeleteProduct(productId)
+      const response = await fetch(
+        `https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/${productId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
         }
-        setIsOpen(false)
-      } else {
-        setError(result.message || "Failed to delete product")
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Unauthorized: Invalid or expired token");
+        }
+        if (response.status === 404) {
+          throw new Error(`Product "${productName}" not found. It may have already been deleted.`);
+        }
+        throw new Error("Failed to delete product");
       }
-    } catch (err) {
-      console.error("Error deleting product:", err)
-      setError("Error deleting product. Please try again.")
+
+      const data = await response.json();
+      if (data.success) {
+        onDeleteProduct(productId);
+        toast.success(`Product "${productName}" deleted successfully`);
+      } else {
+        throw new Error("Delete operation failed");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete product. Please try again.");
     } finally {
-      setDeleting(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="destructive" size="icon">
-          <Trash2 className="h-4 w-4" />
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-rose-700 hover:text-rose-900 hover:bg-rose-100"
+          disabled={isLoading}
+          aria-label={`Delete ${productName}`}
+        >
+          {isLoading ? (
+            <div className="animate-spin h-4 w-4 border-2 border-rose-700 border-t-transparent rounded-full" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="border-rose-200 max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-rose-900">Delete Product</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this product? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setIsOpen(false)}
-            className="text-rose-700"
-          >
+      </AlertDialogTrigger>
+      <AlertDialogContent className="border-rose-200">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-rose-900">
+            Delete Product
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-rose-700">
+            Are you sure you want to delete "{productName}"? This action cannot
+            be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="border-rose-200 text-rose-700 hover:bg-rose-100">
             Cancel
-          </Button>
-          <Button
-            variant="destructive"
+          </AlertDialogCancel>
+          <AlertDialogAction
             onClick={handleDelete}
-            disabled={deleting}
+            className="bg-rose-700 text-white hover:bg-rose-800"
+            disabled={isLoading}
           >
-            {deleting ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+            {isLoading ? "Deleting..." : "Delete"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }

@@ -246,9 +246,9 @@ const AllUserEnquiries = ({ onViewUser }: { onViewUser?: (user: any) => void }) 
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Latest Activity
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
-              </th>
+              </th> */}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
@@ -297,7 +297,7 @@ const AllUserEnquiries = ({ onViewUser }: { onViewUser?: (user: any) => void }) 
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatDate(user.latestEnquiry)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  {/* <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(
                         user.status
@@ -305,7 +305,7 @@ const AllUserEnquiries = ({ onViewUser }: { onViewUser?: (user: any) => void }) 
                     >
                       {user.status}
                     </span>
-                  </td>
+                  </td> */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
                       onClick={() => handleViewUser(user)}

@@ -1,31 +1,53 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Carousel } from "./ui/carousel";
 
+interface Category {
+  _id: string;
+  categoryname: string;
+  catImg: string;
+}
 
 export function CarouselDemo() {
-  const slideData = [
-    {
-      title: "Mystic Mountains",
-      button: "Explore Component",
-      src: "https://i.pinimg.com/1200x/2d/13/43/2d13438236752ff0063036431291cb36.jpg",
-    },
-    {
-      title: "Urban Dreams",
-      button: "Explore Component",
-      src: "https://i.pinimg.com/736x/b0/71/de/b071de36baef5c44fbb4fdc26c8873b5.jpg",
-    },
-    {
-      title: "Neon Nights",
-      button: "Explore Component",
-      src: "https://i.pinimg.com/736x/93/53/b6/9353b6025dcb8142e0fc9637e6a7e5ac.jpg",
-    },
-    {
-      title: "Desert Whispers",
-      button: "Explore Component",
-      src: "https://i.pinimg.com/736x/af/e6/90/afe6900ab8d302a5573dee63237e702a.jpg",
-    },
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(
+          "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/category"
+        );
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setCategories(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Map API response into slides format
+  const slideData =
+    categories.map((cat) => ({
+      title: cat.categoryname,
+      src: cat.catImg,
+    })) || [];
+
+  if (loading) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center">
+        <p className="text-neutral-500">Loading categories...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative overflow-hidden w-full h-full py-20 pt-5 pb-20">
       <Carousel slides={slideData} />
