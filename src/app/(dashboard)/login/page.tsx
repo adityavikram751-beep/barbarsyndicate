@@ -45,7 +45,7 @@ const LoginUI = () => {
 
     try {
       const res = await fetch(
-        'https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/user/login',
+        'https://barber-syndicate.vercel.app/api/v1/user/login',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

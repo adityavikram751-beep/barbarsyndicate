@@ -94,11 +94,11 @@ export default function ProductCatalogClient({
   const [totalResults, setTotalResults] = useState<number>(initialTotalResults);
 
   const PRODUCT_API_URL =
-    "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product";
+    "https://barber-syndicate.vercel.app/api/v1/product";
   const CATEGORY_API_URL =
-    "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/category";
+    "https://barber-syndicate.vercel.app/api/v1/category";
   const BRAND_API_URL =
-    "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/brands";
+    "https://barber-syndicate.vercel.app/api/v1/brands";
 
   // Fetch products
   const fetchProducts = async (page = 1, retryCount = 0) => {

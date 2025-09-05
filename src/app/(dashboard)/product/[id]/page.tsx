@@ -61,8 +61,8 @@ export default function ProductDetail() {
   const [showEnquiryPopup, setShowEnquiryPopup] = useState(false);
   const [enquiryError, setEnquiryError] = useState<string | null>(null);
 
-  const API_URL = `https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/single/${id}`;
-  const ENQUIRY_API_URL = 'https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/enquiry';
+  const API_URL = `https://barber-syndicate.vercel.app/api/v1/product/single/${id}`;
+  const ENQUIRY_API_URL = 'https://barber-syndicate.vercel.app/api/v1/enquiry';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -106,7 +106,7 @@ export default function ProductDetail() {
           });
 
           // Fetch similar products using the new API
-          const SIMILAR_PRODUCTS_API = `https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product?page=${currentPage}`;
+          const SIMILAR_PRODUCTS_API = `https://barber-syndicate.vercel.app/api/v1/product?page=${currentPage}`;
           const similarResponse = await fetch(SIMILAR_PRODUCTS_API, {
             method: 'GET',
             headers: {

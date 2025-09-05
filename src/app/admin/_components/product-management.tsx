@@ -67,7 +67,7 @@ export function ProductManagement() {
         throw new Error("Authentication required. Please log in.");
       }
 
-      const response = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product?page=${currentPage}`, {
+      const response = await fetch(`https://barber-syndicate.vercel.app/api/v1/product?page=${currentPage}`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${adminToken}`,

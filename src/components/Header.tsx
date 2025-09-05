@@ -29,7 +29,7 @@ export default function Header() {
 
     if (token && userId) {
       // Fetch user data
-      fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/user/single-user/${userId}`, {
+      fetch(`https://barber-syndicate.vercel.app/api/v1/user/single-user/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -51,7 +51,7 @@ export default function Header() {
         });
 
       // Fetch enquiry count
-      fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/enquiry/${userId}`, {
+      fetch(`https://barber-syndicate.vercel.app/api/v1/enquiry/${userId}`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,

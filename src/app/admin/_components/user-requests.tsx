@@ -57,7 +57,7 @@ export function UserRequests() {
       try {
         const token = localStorage.getItem("adminToken");
         
-        const response = await fetch('https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/user/all-users', {
+        const response = await fetch('https://barber-syndicate.vercel.app/api/v1/user/all-users', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export function UserRequests() {
         throw new Error('User not found');
       }
 
-      const response = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/admin/approve/${id}`, {
+      const response = await fetch(`https://barber-syndicate.vercel.app/api/v1/admin/approve/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +156,7 @@ export function UserRequests() {
     try {
       const token = localStorage.getItem("adminToken");
       
-      const response = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/admin/reject/${id}`, {
+      const response = await fetch(`https://barber-syndicate.vercel.app/api/v1/admin/reject/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

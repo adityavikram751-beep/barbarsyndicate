@@ -5,7 +5,7 @@ import type React from "react"
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
 import { Plus, Edit, Trash2, RefreshCw, ImageIcon } from "lucide-react"
 
-const API_URL = "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1"
+const API_URL = "https://barber-syndicate.vercel.app/api/v1"
 
 interface Category {
   _id: string

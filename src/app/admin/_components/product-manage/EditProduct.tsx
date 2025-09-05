@@ -92,7 +92,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/category")
+        const res = await fetch("https://barber-syndicate.vercel.app/api/v1/category")
         const data = await res.json()
         if (data.success) {
           setCategories(data.data)
@@ -106,7 +106,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
 
     const fetchBrands = async () => {
       try {
-        const res = await fetch("https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/brands")
+        const res = await fetch("https://barber-syndicate.vercel.app/api/v1/brands")
         const data = await res.json()
         if (data.success) {
           setBrands(data.data)
@@ -195,7 +195,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
         variants: cleanedVariants
       }
 
-      const res = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/${product.id}`, {
+      const res = await fetch(`https://barber-syndicate.vercel.app/api/v1/product/${product.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

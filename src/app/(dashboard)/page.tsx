@@ -30,7 +30,7 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchFeaturedProducts() {
       try {
-        const response = await fetch('https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/product/feature');
+        const response = await fetch('https://barber-syndicate.vercel.app/api/v1/product/feature');
         const data = await response.json();
         if (data.success) {
           // Map API data to Product interface

@@ -50,7 +50,7 @@ export default function EnquiryPage() {
           return;
         }
 
-        const response = await fetch(`https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/enquiry/${storedUserId}`, {
+        const response = await fetch(`https://barber-syndicate.vercel.app/api/v1/enquiry/${storedUserId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

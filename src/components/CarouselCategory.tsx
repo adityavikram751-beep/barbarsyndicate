@@ -17,7 +17,7 @@ export function CarouselDemo() {
     const fetchCategories = async () => {
       try {
         const res = await fetch(
-          "https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/category"
+          "https://barber-syndicate.vercel.app/api/v1/category"
         );
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {

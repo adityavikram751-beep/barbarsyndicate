@@ -29,7 +29,7 @@ const useBrands = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/brands', {
+      const response = await fetch('https://barber-syndicate.vercel.app/api/v1/brands', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ const useBrands = () => {
       setCreating(true);
       setError(null);
       
-      const response = await fetch('https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/brands', {
+      const response = await fetch('https://barber-syndicate.vercel.app/api/v1/brands', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
