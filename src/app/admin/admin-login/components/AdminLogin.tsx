@@ -98,7 +98,7 @@ const AdminLogin: React.FC = () => {
       }
 
       alert(data.message || `${isLogin ? 'Logged in' : 'Signed up'} successfully`);
-      router.push('/admin'); // Handle navigation directly
+      router.push('/admin'); 
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
       console.error('Auth error:', err);
