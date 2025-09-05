@@ -1,3 +1,4 @@
+// components/AdminLogin.tsx
 'use client';
 
 import React, { useState, ChangeEvent, FormEvent } from 'react';
@@ -9,6 +10,10 @@ interface InputFieldProps {
   placeholder: string;
   value: string;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+}
+
+interface AdminLoginProps {
+  onLoginSuccess?: () => void;
 }
 
 interface FormData {
@@ -36,8 +41,7 @@ const InputField: React.FC<InputFieldProps> = ({ name, type, placeholder, value,
   />
 );
 
-// Remove AdminLoginProps and onLoginSuccess
-const AdminLogin: React.FC = () => {
+const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -98,7 +102,12 @@ const AdminLogin: React.FC = () => {
       }
 
       alert(data.message || `${isLogin ? 'Logged in' : 'Signed up'} successfully`);
-      router.push('/admin'); 
+
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else {
+        router.push('/admin');
+      }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
       console.error('Auth error:', err);

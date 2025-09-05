@@ -1,6 +1,7 @@
+// app/admin-login/page.tsx
 'use client';
 
-import AdminLogin from "./components/AdminLogin";
+import AdminLogin from "./_components/AdminLogin";
 
 
 
