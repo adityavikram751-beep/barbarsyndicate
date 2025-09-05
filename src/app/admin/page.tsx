@@ -8,8 +8,9 @@ import { UserRequests } from "./_components/user-requests"
 import { ProductManagement } from "./_components/product-management"
 import Category from "./_components/category"
 import UserEnquiry from "./_components/UserEnquiry"
-import AdminLogin from "./login/page"
+
 import Brands from "./_components/brands"
+import AdminLogin from "./admin-login/page"
 
 
 
@@ -61,7 +62,7 @@ export default function AdminPanel() {
 
 
   if (!isAuthenticated) {
-    return <AdminLogin onLoginSuccess={handleLoginSuccess} />
+    return <AdminLogin  />
   }
 
   return (

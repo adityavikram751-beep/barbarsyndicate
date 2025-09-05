@@ -11,10 +11,6 @@ interface InputFieldProps {
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
-interface AdminLoginProps {
-  onLoginSuccess?: () => void;
-}
-
 interface FormData {
   name: string;
   email: string;
@@ -40,7 +36,8 @@ const InputField: React.FC<InputFieldProps> = ({ name, type, placeholder, value,
   />
 );
 
-const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
+// Remove AdminLoginProps and onLoginSuccess
+const AdminLogin: React.FC = () => {
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -101,12 +98,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
       }
 
       alert(data.message || `${isLogin ? 'Logged in' : 'Signed up'} successfully`);
-
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      } else {
-        router.push('/admin');
-      }
+      router.push('/admin'); // Handle navigation directly
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
       console.error('Auth error:', err);
