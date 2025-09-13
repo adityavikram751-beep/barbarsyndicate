@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Image from "next/image"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus } from "lucide-react"
+import { Plus, X, Trash2 } from "lucide-react"
 
 interface Product {
   id: string
@@ -71,7 +72,11 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
     points: "",
     isFeature: false,
   })
-  const [variants, setVariants] = useState<Variant[]>([{ price: "", quantity: "" }])
+  const [variants, setVariants] = useState<Variant[]>([
+    { price: "", quantity: "1" },
+    { price: "", quantity: "12Pcs" },
+    { price: "", quantity: "Carton" },
+  ])
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
@@ -125,7 +130,11 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
     if (!isOpen) {
       setImages([])
       setImagePreviews([])
-      setVariants([{ price: "", quantity: "" }])
+      setVariants([
+        { price: "", quantity: "1" },
+        { price: "", quantity: "12Pcs" },
+        { price: "", quantity: "Carton" },
+      ])
       setFormData({
         name: "",
         description: "",
@@ -158,25 +167,29 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
     })
   }
 
-  // ---- Variants Handling ----
-  const addVariant = () => {
-    setVariants([...variants, { price: "", quantity: "" }])
-  }
-
+  // Update variant values
   const updateVariant = (index: number, field: keyof Variant, value: string) => {
-    if ((field === "price" || field === "quantity") && value && !/^\d*\.?\d*$/.test(value)) {
-      return // Only allow numbers and decimal points
+    if (field === "price" && value && !/^\d*\.?\d*$/.test(value)) {
+      return // Only allow numbers and decimal points for price
     }
     const updated = [...variants]
     updated[index][field] = value
     setVariants(updated)
   }
 
-  const removeVariant = (index: number) => {
-    setVariants(variants.filter((_, i) => i !== index))
+  // Add new variant (optional, beyond the fixed 3)
+  const addVariant = () => {
+    setVariants([...variants, { price: "", quantity: "" }])
   }
 
-  // ---- Submit ----
+  // Remove variant (only for additional variants beyond the first 3)
+  const removeVariant = (index: number) => {
+    if (index >= 3) {
+      setVariants(variants.filter((_, i) => i !== index))
+    }
+  }
+
+  // Submit form
   const handleSubmit = async () => {
     // Validate required fields
     if (!formData.name || !formData.categoryId || !formData.brand) {
@@ -187,9 +200,10 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
       setError("Please add at least one image (max 5).")
       return
     }
-    const cleanedVariants = variants.filter((v) => v.price && v.quantity)
-    if (cleanedVariants.length === 0) {
-      setError("Please add at least one valid variant with price and quantity.")
+    const cleanedVariants = variants.map((v) => ({ ...v, price: v.price || "0" }))
+    const fixedVariants = cleanedVariants.slice(0, 3)
+    if (fixedVariants.some(v => !v.price || parseFloat(v.price) <= 0)) {
+      setError("Please provide valid prices for all three required variants (Single, Dozen, Carton).")
       return
     }
 
@@ -232,14 +246,14 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
 
       if (res.ok) {
         const newProduct: Product = {
-          id: result._id || crypto.randomUUID(), // Use server-provided ID or generate a UUID
+          id: result._id || crypto.randomUUID(),
           name: formData.name,
           image: result.image || imagePreviews[0] || "/placeholder.svg?height=100&width=100",
           description: formData.description,
           pricing: {
-            single: parseFloat(cleanedVariants[0]?.price) || 0,
-            dozen: parseFloat(cleanedVariants[1]?.price) || 0,
-            carton: parseFloat(cleanedVariants[2]?.price) || 0,
+            single: parseFloat(fixedVariants[0]?.price) || 0,
+            dozen: parseFloat(fixedVariants[1]?.price) || 0,
+            carton: parseFloat(fixedVariants[2]?.price) || 0,
           },
           brand: formData.brand,
           categoryId: formData.categoryId,
@@ -264,155 +278,271 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-rose-600 hover:bg-rose-700">
+        <Button className="bg-rose-600 hover:bg-rose-700 text-white font-medium shadow-lg transition-all duration-200 hover:shadow-xl">
           <Plus className="h-4 w-4 mr-2" />
           Add Product
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-rose-200 max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-rose-900">Add New Product</DialogTitle>
-          <DialogDescription>Create a new product in your catalog</DialogDescription>
+      <DialogContent className="border-rose-200 max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="p-6 border-b border-rose-100 bg-gradient-to-r from-rose-50 to-pink-50">
+          <DialogTitle className="text-2xl font-bold text-rose-900 flex items-center">
+            <Plus className="h-6 w-6 mr-2 text-rose-600" />
+            Add New Product
+          </DialogTitle>
+          <DialogDescription className="text-rose-600">
+            Create a new product in your catalog with detailed pricing options
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          {error && <div className="text-red-500 text-sm">{error}</div>}
-          <div>
-            <Label htmlFor="name">Product Name</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
+        <div className="p-6 space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <X className="h-4 w-4 text-red-500 mr-2" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Basic Info Section */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                Product Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="border-rose-200 focus:border-rose-500 focus:ring-rose-500"
+                placeholder="Enter product name"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brand" className="text-sm font-medium text-gray-700">
+                Brand <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="brand"
+                value={formData.brand}
+                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                className="w-full px-3 py-2 border border-rose-200 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white"
+                required
+              >
+                <option value="">Select Brand</option>
+                {brands.map((b) => (
+                  <option key={b._id} value={b._id}>
+                    {b.brand}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          {/* Brand Select */}
-          <div>
-            <Label htmlFor="brand">Brand</Label>
-            <select
-              id="brand"
-              value={formData.brand}
-              onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            >
-              <option value="">Select Brand</option>
-              {brands.map((b) => (
-                <option key={b._id} value={b._id}>
-                  {b.brand}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Description */}
-          <div>
-            <Label htmlFor="description">Description</Label>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+              Description
+            </Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 min-h-[100px]"
+              placeholder="Enter product description..."
             />
           </div>
-          {/* Category Select */}
-          <div>
-            <Label htmlFor="category">Category</Label>
-            <select
-              id="category"
-              value={formData.categoryId}
-              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            >
-              <option value="">Select Category</option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.categoryname}
-                </option>
-              ))}
-            </select>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                Category <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="category"
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                className="w-full px-3 py-2 border border-rose-200 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white"
+                required
+              >
+                <option value="">Select Category</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.categoryname}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Featured Product</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isFeature"
+                  checked={formData.isFeature}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isFeature: !!checked })}
+                  className="border-rose-200 focus:ring-rose-500"
+                />
+                <Label htmlFor="isFeature" className="text-sm text-gray-600">
+                  Mark as featured product
+                </Label>
+              </div>
+            </div>
           </div>
-          {/* Points */}
-          <div>
-            <Label htmlFor="points">Points (one per line)</Label>
+
+          {/* Points Section */}
+          <div className="space-y-2">
+            <Label htmlFor="points" className="text-sm font-medium text-gray-700">
+              Product Points (one per line)
+            </Label>
             <Textarea
               id="points"
               value={formData.points}
               onChange={(e) => setFormData({ ...formData, points: e.target.value })}
-              placeholder="Enter product points, one per line"
+              className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 min-h-[80px]"
+              placeholder="Enter product points/benefits, one per line..."
             />
           </div>
-          {/* Variants */}
-          <div>
-            <Label>Variants</Label>
-            {variants.map((v, i) => (
-              <div key={i} className="flex gap-2 mt-2 items-center">
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="Price"
-                  value={v.price}
-                  onChange={(e) => updateVariant(i, "price", e.target.value)}
-                />
-                <Input
-                  type="string"
-                  placeholder="Quantity"
-                  value={v.quantity}
-                  onChange={(e) => updateVariant(i, "quantity", e.target.value)}
-                />
-                {variants.length > 1 && (
+
+          {/* Pricing Section */}
+          <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-lg border border-rose-100">
+            <h3 className="text-lg font-semibold text-rose-900 mb-4 flex items-center">
+              Pricing Structure <span className="text-sm text-rose-600 ml-2">(Required)</span>
+            </h3>
+            <div className="space-y-4">
+              {variants.slice(0, 3).map((v, i) => {
+                const labels = ['Single Unit', 'Dozen (12 Pieces)', 'Carton']
+                return (
+                  <div key={i} className="flex items-end gap-3 bg-white p-4 rounded-md shadow-sm border border-rose-100">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                        {labels[i]}
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder={`Price for ${labels[i].toLowerCase()}`}
+                        value={v.price}
+                        onChange={(e) => updateVariant(i, "price", e.target.value)}
+                        className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 text-lg font-medium"
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">{v.quantity}</p>
+                    </div>
+                  </div>
+                )
+              })}
+              
+              {/* Optional Additional Variants */}
+              {variants.length > 3 && (
+                <>
+                  <div className="border-t border-rose-200 pt-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Variants</h4>
+                    {variants.slice(3).map((v, i) => (
+                      <div key={i + 3} className="flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-md">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Price"
+                          value={v.price}
+                          onChange={(e) => updateVariant(i + 3, "price", e.target.value)}
+                          className="flex-1 border-rose-200 focus:border-rose-500"
+                        />
+                        <Input
+                          type="text"
+                          placeholder="Quantity"
+                          value={v.quantity}
+                          onChange={(e) => updateVariant(i + 3, "quantity", e.target.value)}
+                          className="flex-1 border-rose-200 focus:border-rose-500"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeVariant(i + 3)}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                   <Button
                     type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => removeVariant(i)}
+                    variant="outline"
+                    onClick={addVariant}
+                    className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300"
                   >
-                    ✖
+                    + Add Custom Variant
                   </Button>
-                )}
-              </div>
-            ))}
-            <Button type="button" onClick={addVariant} className="mt-2">
-              + Add Variant
-            </Button>
+                </>
+              )}
+            </div>
           </div>
-          {/* Images */}
-          <div>
-            <Label htmlFor="images">Upload Images (Max 5)</Label>
+
+          {/* Images Section */}
+          <div className="space-y-2">
+            <Label htmlFor="images" className="text-sm font-medium text-gray-700">
+              Product Images <span className="text-rose-600">(At least 1, max 5)</span>
+            </Label>
             <Input
               id="images"
               type="file"
               accept="image/*"
               multiple
               onChange={handleImageChange}
+              className="border-rose-200 focus:border-rose-500 focus:ring-rose-500"
             />
             {imagePreviews.length > 0 && (
-              <div className="flex gap-2 mt-2 flex-wrap">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3">
                 {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative w-20 h-20">
-                    <Image
-                      src={preview}
-                      alt="Preview"
-                      layout="fill"
-                      objectFit="contain"
-                      className="rounded-md border"
-                    />
+                  <div key={index} className="relative group">
+                    <div className="relative w-full h-24 bg-gray-100 rounded-md overflow-hidden border border-rose-200">
+                      <Image
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 33vw"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(index)}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600"
                     >
-                      ✖
+                      <X className="h-3 w-3" />
                     </button>
+                    {images.length + (imagePreviews.length - 1) >= 5 && (
+                      <div className="absolute bottom-1 left-1 bg-red-500 text-white text-xs px-1 rounded">
+                        Max
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
+            {imagePreviews.length < 5 && (
+              <p className="text-xs text-gray-500 mt-1">
+                You can upload {5 - imagePreviews.length} more image{5 - imagePreviews.length !== 1 ? 's' : ''}
+              </p>
+            )}
           </div>
+
+          {/* Submit Button */}
           <Button
             onClick={handleSubmit}
-            className="w-full bg-rose-600 hover:bg-rose-700"
-            disabled={uploading}
+            className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={uploading || !formData.name || !formData.categoryId || !formData.brand || images.length === 0}
           >
-            {uploading ? "Saving..." : "Add Product"}
+            {uploading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Saving Product...
+              </>
+            ) : (
+              "Add Product"
+            )}
           </Button>
         </div>
       </DialogContent>
