@@ -33,6 +33,7 @@ export default function CategoryManagement() {
   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false)
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState<boolean>(true)
 
   const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem("adminToken")
@@ -175,7 +176,7 @@ export default function CategoryManagement() {
       setCategoryName("")
       setSelectedImages([])
       setEditingCategory(null)
-      await fetchCategories()
+      await fetchCategories() // Auto-refresh after successful save
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : `Failed to ${editingCategory ? "update" : "add"} category`
@@ -191,6 +192,7 @@ export default function CategoryManagement() {
     setCategoryName(category.categoryname)
     setSelectedImages([])
     setError("")
+    setShowForm(true) // Show form when editing
   }
 
   const handleCancelEdit = () => {
@@ -233,7 +235,8 @@ export default function CategoryManagement() {
 
       setDeleteModalOpen(false)
       setCategoryToDelete(null)
-      await fetchCategories()
+      setShowForm(false) // Hide form after successful delete
+      await fetchCategories() // Auto-refresh after successful delete
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Failed to delete category"
       setError(errorMessage)
@@ -280,74 +283,86 @@ export default function CategoryManagement() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-8">
-          <h2 className="text-xl font-semibold text-slate-800 mb-6">
-            {editingCategory ? "Edit Category" : "Add New Category"}
-          </h2>
+        {showForm ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-8">
+            <h2 className="text-xl font-semibold text-slate-800 mb-6">
+              {editingCategory ? "Edit Category" : "Add New Category"}
+            </h2>
 
-          <form onSubmit={handleSaveCategory} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Category Name</label>
-              <input
-                type="text"
-                value={categoryName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setCategoryName(e.target.value)}
-                placeholder="Enter category name..."
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-            </div>
-
-            {!editingCategory && (
+            <form onSubmit={handleSaveCategory} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Category Image</label>
-                <div className="flex flex-wrap gap-4">
-                  {selectedImages.map((img, index) => (
-                    <div key={index} className="relative group">
-                      <div className="w-24 h-24 border-2 border-slate-200 rounded-lg overflow-hidden">
-                        <img src={img.previewUrl || "/placeholder.svg"} alt="" className="object-cover w-full h-full" />
-                      </div>
-                      <button
-                        type="button"
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs flex items-center justify-center transition-colors shadow-lg"
-                        onClick={() => removeImage(index)}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  {selectedImages.length < 1 && (
-                    <label className="w-24 h-24 border-2 border-dashed border-slate-300 hover:border-slate-400 rounded-lg flex flex-col items-center justify-center text-slate-400 cursor-pointer transition-colors group">
-                      <Plus className="w-6 h-6 mb-1 group-hover:text-slate-500" />
-                      <span className="text-xs">Upload</span>
-                      <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                    </label>
-                  )}
-                </div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Category Name</label>
+                <input
+                  type="text"
+                  value={categoryName}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setCategoryName(e.target.value)}
+                  placeholder="Enter category name..."
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
-            )}
 
-            <div className="flex justify-end gap-3 pt-4">
-              {editingCategory && (
+              {!editingCategory && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Category Image</label>
+                  <div className="flex flex-wrap gap-4">
+                    {selectedImages.map((img, index) => (
+                      <div key={index} className="relative group">
+                        <div className="w-24 h-24 border-2 border-slate-200 rounded-lg overflow-hidden">
+                          <img src={img.previewUrl || "/placeholder.svg"} alt="" className="object-cover w-full h-full" />
+                        </div>
+                        <button
+                          type="button"
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs flex items-center justify-center transition-colors shadow-lg"
+                          onClick={() => removeImage(index)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    {selectedImages.length < 1 && (
+                      <label className="w-24 h-24 border-2 border-dashed border-slate-300 hover:border-slate-400 rounded-lg flex flex-col items-center justify-center text-slate-400 cursor-pointer transition-colors group">
+                        <Plus className="w-6 h-6 mb-1 group-hover:text-slate-500" />
+                        <span className="text-xs">Upload</span>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4">
+                {editingCategory && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                  type="submit"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
                   disabled={loading}
                 >
-                  Cancel
+                  <Plus size={16} />
+                  {loading ? "Saving..." : editingCategory ? "Update Category" : "Add Category"}
                 </button>
-              )}
-              <button
-                type="submit"
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
-                disabled={loading}
-              >
-                <Plus size={16} />
-                {loading ? "Saving..." : editingCategory ? "Update Category" : "Add Category"}
-              </button>
-            </div>
-          </form>
-        </div>
+              </div>
+            </form>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-8">
+            <button
+              onClick={() => setShowForm(true)}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              Show Form
+            </button>
+          </div>
+        )}
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
           <h2 className="text-xl font-semibold text-slate-800 mb-6">Categories</h2>
@@ -410,7 +425,7 @@ export default function CategoryManagement() {
       </div>
 
       {deleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h2 className="text-xl font-bold text-slate-800 mb-4">Confirm Delete</h2>
             <p className="text-slate-600 mb-6">
