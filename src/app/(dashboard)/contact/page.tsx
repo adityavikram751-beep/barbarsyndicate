@@ -9,17 +9,19 @@ export default function ContactPage() {
     email: "",
     message: "",
   });
+const handleChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+) => {
+  const { name, value } = e.target;
+  setFormData((prev) => ({ ...prev, [name]: value }));
+};
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  alert("Message sent successfully ✅");
+  setFormData({ name: "", phone: "", email: "", message: "" });
+};
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert("Message sent successfully ✅");
-    setFormData({ name: "", phone: "", email: "", message: "" });
-  };
 
   return (
     <section className="py-16 min-h-[60vh] flex items-center justify-center bg-[#FFF8F5] px-3">
