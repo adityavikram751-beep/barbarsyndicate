@@ -53,7 +53,7 @@ const RegisterUI = () => {
 
     try {
       const res = await fetch(
-        'https://barber-syndicate.vercel.app/api/v1/user/singup',
+        'https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/user/singup',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

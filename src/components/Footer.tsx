@@ -1,6 +1,8 @@
 import React from 'react';
+import Link from 'next/link';
 import { ShoppingBag, Phone, Mail, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 import Image from 'next/image';
+
 export default function Footer() {
   return (
     <footer className="bg-red-900 text-white">
@@ -9,14 +11,12 @@ export default function Footer() {
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              
               <Image
-                             src="/logo.png" // Put the image in public/logo.png
-                             alt="Barber Syndicate Logo"
-                             width={80}
-                             height={50}
-                           />
-              
+                src="/logo.png"
+                alt="Barber Syndicate Logo"
+                width={80}
+                height={50}
+              />
               <span className="text-xl font-bold text-yellow-300">Barber Syndicate</span>
             </div>
             <p className="text-yellow-100 text-sm leading-relaxed">
@@ -41,59 +41,32 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4 text-yellow-300">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <a href="/" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <Link href="/" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/product" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <Link href="/product" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Products
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/register" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <Link href="/register" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Become a Partner
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <Link href="/terms" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Terms & Conditions
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-yellow-100 hover:text-white transition-colors text-sm">
+                <Link href="/privacy" className="text-yellow-100 hover:text-white transition-colors text-sm">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
-
-          {/* Product Categories
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-yellow-300">Categories</h3>
-            <ul className="space-y-2">
-              <li>
-                <a href="/product?category=skincare" className="text-yellow-100 hover:text-white transition-colors text-sm">
-                  Skincare
-                </a>
-              </li>
-              <li>
-                <a href="/product?category=haircare" className="text-yellow-100 hover:text-white transition-colors text-sm">
-                  Haircare
-                </a>
-              </li>
-              <li>
-                <a href="/product?category=makeup" className="text-yellow-100 hover:text-white transition-colors text-sm">
-                  Makeup
-                </a>
-              </li>
-              <li>
-                <a href="/product?category=fragrance" className="text-yellow-100 hover:text-white transition-colors text-sm">
-                  Fragrance
-                </a>
-              </li>
-            </ul>
-          </div> */}
 
           {/* Contact Info */}
           <div>

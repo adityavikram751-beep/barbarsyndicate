@@ -94,11 +94,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
       try {
         const res = await fetch("https://barber-syndicate.vercel.app/api/v1/category")
         const data = await res.json()
-        if (data.success) {
-          setCategories(data.data)
-        } else {
-          console.error("Failed to fetch categories:", data.message)
-        }
+        if (data.success) setCategories(data.data)
       } catch (err) {
         console.error("Error fetching categories:", err)
       }
@@ -108,11 +104,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
       try {
         const res = await fetch("https://barber-syndicate.vercel.app/api/v1/brands")
         const data = await res.json()
-        if (data.success) {
-          setBrands(data.data)
-        } else {
-          console.error("Failed to fetch brands:", data.message)
-        }
+        if (data.success) setBrands(data.data)
       } catch (err) {
         console.error("Error fetching brands:", err)
       }
@@ -122,7 +114,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
     fetchBrands()
   }, [])
 
-  // Reset form when dialog is closed
+  // Reset form when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setVariants([
@@ -142,14 +134,10 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
     }
   }, [isOpen, product])
 
-  const addVariant = () => {
-    setVariants([...variants, { price: "", quantity: "" }])
-  }
+  const addVariant = () => setVariants([...variants, { price: "", quantity: "" }])
 
   const updateVariant = (index: number, field: keyof Variant, value: string) => {
-    if (field === "price" && value && !/^\d*\.?\d*$/.test(value)) {
-      return
-    }
+    if (field === "price" && value && !/^\d*\.?\d*$/.test(value)) return
     const updated = [...variants]
     updated[index][field] = value
     setVariants(updated)
@@ -180,10 +168,10 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
         return
       }
 
-      // Handle points
-      const pointsArray = formData.points && formData.points.trim() !== ""
-        ? formData.points.split("\n").map((s) => s.trim()).filter(Boolean)
-        : []
+      const pointsArray =
+        formData.points && formData.points.trim() !== ""
+          ? formData.points.split("\n").map((s) => s.trim()).filter(Boolean)
+          : []
 
       const jsonPayload = {
         name: formData.name.trim(),
@@ -192,14 +180,14 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
         brand: formData.brand,
         isFeature: formData.isFeature,
         points: pointsArray,
-        variants: cleanedVariants
+        variants: cleanedVariants,
       }
 
       const res = await fetch(`https://barber-syndicate.vercel.app/api/v1/product/${product.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(jsonPayload),
       })
@@ -212,15 +200,15 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
           name: formData.name,
           description: formData.description,
           pricing: {
-            single: parseFloat(cleanedVariants.find(v => v.quantity === "1")?.price || "0"),
-            dozen: parseFloat(cleanedVariants.find(v => v.quantity === "12pcs")?.price || "0"),
-            carton: parseFloat(cleanedVariants.find(v => v.quantity === "carter")?.price || "0"),
+            single: parseFloat(cleanedVariants.find((v) => v.quantity === "1")?.price || "0"),
+            dozen: parseFloat(cleanedVariants.find((v) => v.quantity === "12pcs")?.price || "0"),
+            carton: parseFloat(cleanedVariants.find((v) => v.quantity === "carter")?.price || "0"),
           },
         }
         onUpdateProduct(updatedProduct)
         setIsOpen(false)
       } else {
-        setError(result.message || `Failed to update product: ${res.status} ${res.statusText}`)
+        setError(result.message || `Failed to update product.`)
       }
     } catch (err) {
       console.error("Error updating product:", err)
@@ -233,18 +221,25 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-rose-600 hover:bg-rose-700">
-          <Edit2 className="h-4 w-4 mr-2" />
-          Edit Product
+        {/* ✅ Icon-only Edit Button */}
+        <Button
+          variant="outline"
+          size="icon"
+          className="border-rose-300 text-rose-700 hover:bg-rose-50 bg-transparent"
+        >
+          <Edit2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
+
       <DialogContent className="border-rose-200 max-w-3xl w-full">
         <DialogHeader>
           <DialogTitle className="text-rose-900">Edit Product</DialogTitle>
           <DialogDescription>Update product details</DialogDescription>
         </DialogHeader>
+
         <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-4">
           {error && <div className="text-red-500 text-sm bg-red-50 p-3 rounded-md">{error}</div>}
+
           <div>
             <Label htmlFor="name">Product Name *</Label>
             <Input
@@ -254,6 +249,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
               required
             />
           </div>
+
           <div>
             <Label htmlFor="brand">Brand *</Label>
             <select
@@ -271,6 +267,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
               ))}
             </select>
           </div>
+
           <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -279,6 +276,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
+
           <div>
             <Label htmlFor="category">Category *</Label>
             <select
@@ -296,6 +294,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
               ))}
             </select>
           </div>
+
           <div>
             <Label htmlFor="points">Points (one per line)</Label>
             <Textarea
@@ -305,6 +304,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
               placeholder="Enter product points, one per line"
             />
           </div>
+
           <div>
             <Label>Variants</Label>
             {variants.map((v, i) => (
@@ -338,6 +338,7 @@ export function EditProduct({ product, onUpdateProduct }: EditProductProps) {
               + Add Variant
             </Button>
           </div>
+
           <Button
             onClick={handleSubmit}
             className="w-full bg-rose-600 hover:bg-rose-700"

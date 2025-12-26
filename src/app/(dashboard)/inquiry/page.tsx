@@ -326,6 +326,7 @@ export default function EnquiryPage() {
                           )}
                         </div>
 
+                        {/* ✅ Available Variants + Total Price */}
                         <div>
                           <h4 className="font-semibold text-gray-900 mb-2">Available Variants</h4>
                           <div className="space-y-2">
@@ -345,6 +346,14 @@ export default function EnquiryPage() {
                                 +{enquiry.variants.length - 2} more variants
                               </p>
                             )}
+
+                            {/* ✅ Total Price */}
+                            <div className="border-t pt-2 mt-2 flex justify-between items-center">
+                              <p className="text-sm font-medium text-gray-700">Total Price</p>
+                              <p className="text-lg font-bold text-blue-600">
+                                ₹{enquiry.variants.reduce((total, v) => total + (v.price || 0), 0).toLocaleString()}
+                              </p>
+                            </div>
                           </div>
                         </div>
 

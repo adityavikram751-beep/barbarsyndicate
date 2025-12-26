@@ -1,7 +1,6 @@
-// components/AdminLogin.tsx
 'use client';
 
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface InputFieldProps {
@@ -53,6 +52,14 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
 
+  // ✅ agar token already hai to redirect to admin panel
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      router.push('/admin');
+    }
+  }, [router]);
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -74,11 +81,11 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const res = await fetch("https://barber-syndicate.vercel.app/api/v1/admin/login", {
+      const res = await fetch('https://barber-syndicate.vercel.app/api/v1/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
         body: JSON.stringify(getPayload()),
       });
@@ -103,6 +110,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
 
       alert(data.message || `${isLogin ? 'Logged in' : 'Signed up'} successfully`);
 
+      // ✅ if parent passed onLoginSuccess (AdminPanel), call it
       if (onLoginSuccess) {
         onLoginSuccess();
       } else {
@@ -174,7 +182,9 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
             type="submit"
             disabled={loading}
             className={`w-full text-white py-2 rounded hover:opacity-90 ${
-              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-purple-500 to-pink-500'
+              loading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-500 to-pink-500'
             }`}
           >
             {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Sign Up'}

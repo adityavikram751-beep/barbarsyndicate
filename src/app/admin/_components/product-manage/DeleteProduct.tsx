@@ -33,7 +33,7 @@ export function DeleteProduct({
     setIsLoading(true);
     try {
       const adminToken = localStorage.getItem("adminToken");
-      
+
       if (!adminToken) {
         throw new Error("Authentication required. Please log in.");
       }
@@ -76,10 +76,11 @@ export function DeleteProduct({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
+        {/* ✅ Icon-only button with border (outline style) */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
-          className="text-rose-700 hover:text-rose-900 hover:bg-rose-100"
+          className="border border-rose-300 text-rose-700 hover:bg-rose-50 bg-transparent"
           disabled={isLoading}
           aria-label={`Delete ${productName}`}
         >
@@ -90,6 +91,7 @@ export function DeleteProduct({
           )}
         </Button>
       </AlertDialogTrigger>
+
       <AlertDialogContent className="border-rose-200">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-rose-900">
