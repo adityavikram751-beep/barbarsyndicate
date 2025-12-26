@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
 import { Mail, Phone, MapPin, Calendar, User, Package, Star, ShoppingBag, Clock, AlertTriangle } from 'lucide-react';
 
 interface Enquiry {
@@ -38,6 +37,7 @@ export default function EnquiryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<{ [key: string]: number }>({});
+  const [expandedVariants, setExpandedVariants] = useState<{ [key: string]: boolean }>({}); // ⭐ ADDED
 
   useEffect(() => {
     const fetchEnquiries = async () => {
@@ -67,12 +67,17 @@ export default function EnquiryPage() {
         if (result.success && result.data && result.data.length > 0) {
           setEnquiries(result.data);
           const initialSelectedImages: { [key: string]: number } = {};
+          const initialExpanded: { [key: string]: boolean } = {};
+
           result.data.forEach((enquiry: Enquiry) => {
             if (enquiry.productId) {
               initialSelectedImages[enquiry._id] = 0;
+              initialExpanded[enquiry._id] = false;
             }
           });
+
           setSelectedImages(initialSelectedImages);
+          setExpandedVariants(initialExpanded);
         } else {
           setError(result.message || 'No enquiry data found.');
         }
@@ -165,7 +170,7 @@ export default function EnquiryPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">My Enquiries</h1>
               <p className="text-sm text-gray-600 mt-1">
-                {enquiries.length} {enquiries.length === 1 ? 'enquiry' : 'enquiries'} found
+                
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -326,12 +331,19 @@ export default function EnquiryPage() {
                           )}
                         </div>
 
-                        {/* ✅ Available Variants + Total Price */}
+                        {/* ⭐⭐⭐⭐⭐ FINAL SHOW MORE / SHOW LESS CODE ⭐⭐⭐⭐⭐ */}
                         <div>
                           <h4 className="font-semibold text-gray-900 mb-2">Available Variants</h4>
                           <div className="space-y-2">
-                            {enquiry.variants.slice(0, 2).map((variant, variantIndex) => (
-                              <div key={variant._id} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+
+                            {(expandedVariants[enquiry._id]
+                              ? enquiry.variants
+                              : enquiry.variants.slice(0, 2)
+                            ).map((variant, variantIndex) => (
+                              <div
+                                key={variant._id}
+                                className="flex justify-between items-center p-2 bg-gray-50 rounded-lg"
+                              >
                                 <div>
                                   <p className="font-medium text-gray-900 text-sm">Variant {variantIndex + 1}</p>
                                   <p className="text-xs text-gray-600">Qty: {variant.quantity}</p>
@@ -341,13 +353,23 @@ export default function EnquiryPage() {
                                 </div>
                               </div>
                             ))}
+
                             {enquiry.variants.length > 2 && (
-                              <p className="text-sm text-gray-500 text-center">
-                                +{enquiry.variants.length - 2} more variants
-                              </p>
+                              <button
+                                onClick={() =>
+                                  setExpandedVariants(prev => ({
+                                    ...prev,
+                                    [enquiry._id]: !prev[enquiry._id],
+                                  }))
+                                }
+                                className="w-full text-center text-blue-600 text-sm hover:underline mt-1"
+                              >
+                                {expandedVariants[enquiry._id]
+                                  ? "Show Less"
+                                  : `+${enquiry.variants.length - 2} more variants`}
+                              </button>
                             )}
 
-                            {/* ✅ Total Price */}
                             <div className="border-t pt-2 mt-2 flex justify-between items-center">
                               <p className="text-sm font-medium text-gray-700">Total Price</p>
                               <p className="text-lg font-bold text-blue-600">
