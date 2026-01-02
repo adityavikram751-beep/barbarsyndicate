@@ -128,12 +128,28 @@ export default function Header() {
             >
               Products
             </Link>
+
+            
+               <Link 
+              href="/brand" 
+              className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200"
+            >
+              Brands
+            </Link>
+
+               <Link 
+              href="/category" 
+              className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200"
+            >
+              Categorys
+            </Link>
             <Link 
               href="/contact" 
               className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200"
             >
               Contact
             </Link>
+
           </nav>
 
           {/* Desktop Auth & Actions */}

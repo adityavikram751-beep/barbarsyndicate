@@ -10,13 +10,16 @@ import {
   ImageIcon,
   Search,
   Filter,
-  Download,
-  Upload,
   X,
   Check,
   AlertCircle,
   Grid3X3,
   List,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  FolderOpen,
+  Folder,
 } from "lucide-react"
 
 const API_URL = "https://barber-syndicate.vercel.app/api/v1"
@@ -27,41 +30,65 @@ interface Category {
   catImg: string
 }
 
+interface SubCategory {
+  _id: string
+  subCatName: string
+  subCatTitle: string
+  catId: string
+  isDelete: boolean
+}
+
 interface ImageFile {
   file: File
   previewUrl: string
 }
 
 interface ApiResponse<T> {
-  success: boolean
+  success?: boolean
+  status?: string
   data?: T
   message?: string
 }
 
 export default function CategoryManagement() {
+  // States
   const [categories, setCategories] = useState<Category[]>([])
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([])
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([])
-  const [selectedImages, setSelectedImages] = useState<ImageFile[]>([])
+  const [filteredSubCategories, setFilteredSubCategories] = useState<SubCategory[]>([])
+  
+  // Form States
   const [categoryName, setCategoryName] = useState<string>("")
+  const [subCatName, setSubCatName] = useState<string>("")
+  const [subCatTitle, setSubCatTitle] = useState<string>("")
+  const [selectedCatId, setSelectedCatId] = useState<string>("")
+  
+  // UI States
+  const [selectedImages, setSelectedImages] = useState<ImageFile[]>([])
   const [searchTerm, setSearchTerm] = useState<string>("")
+  const [subCatSearchTerm, setSubCatSearchTerm] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState<string>("")
   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false)
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
+  const [itemToDelete, setItemToDelete] = useState<Category | SubCategory | null>(null)
+  const [deleteType, setDeleteType] = useState<"category" | "subcategory">("category")
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState<boolean>(true)
+  const [editingSubCategory, setEditingSubCategory] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set())
   const [dragOver, setDragOver] = useState<boolean>(false)
+  const [activeTab, setActiveTab] = useState<"categories" | "subcategories">("categories")
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
 
   const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem("adminToken")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
+  // Fetch Categories
   useEffect(() => {
     fetchCategories()
+    fetchSubCategories()
   }, [])
 
   useEffect(() => {
@@ -72,18 +99,12 @@ export default function CategoryManagement() {
   }, [categories, searchTerm])
 
   useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => setSuccess(""), 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [success])
-
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(""), 5000)
-      return () => clearTimeout(timer)
-    }
-  }, [error])
+    const filtered = subCategories.filter((subCat) =>
+      subCat.subCatName.toLowerCase().includes(subCatSearchTerm.toLowerCase()) ||
+      subCat.subCatTitle.toLowerCase().includes(subCatSearchTerm.toLowerCase())
+    )
+    setFilteredSubCategories(filtered)
+  }, [subCategories, subCatSearchTerm])
 
   const fetchCategories = async () => {
     try {
@@ -119,6 +140,46 @@ export default function CategoryManagement() {
     }
   }
 
+  const fetchSubCategories = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`${API_URL}/subcategory/getSubCat`, {
+        method: "GET",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      })
+
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        console.error("Non-JSON response:", text)
+        throw new Error("Server returned non-JSON response")
+      }
+
+      const data: ApiResponse<SubCategory[]> = await response.json()
+      if (!data.status || data.status !== "success") {
+        throw new Error(data.message || "Failed to fetch subcategories")
+      }
+
+      setSubCategories(data.data || [])
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch subcategories"
+      setError(errorMessage)
+      console.error("Fetch subcategories error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getCategoryName = (catId: string) => {
+    const category = categories.find(cat => cat._id === catId)
+    return category ? category.categoryname : "Unknown Category"
+  }
+
+  // Image Upload Handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(true)
@@ -134,10 +195,6 @@ export default function CategoryManagement() {
     setDragOver(false)
 
     const files = Array.from(e.dataTransfer.files)
-    handleFileSelection(files)
-  }
-
-  const handleFileSelection = (files: File[]) => {
     if (selectedImages.length + files.length > 1) {
       setError("You can only upload 1 image")
       return
@@ -160,7 +217,25 @@ export default function CategoryManagement() {
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    handleFileSelection(files)
+    if (selectedImages.length + files.length > 1) {
+      setError("You can only upload 1 image")
+      return
+    }
+
+    files.forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        setError("Only image files allowed")
+        return
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        setError("Image size should be less than 2MB")
+        return
+      }
+
+      const previewUrl = URL.createObjectURL(file)
+      setSelectedImages((prev) => [...prev, { file, previewUrl }])
+    })
+    
     e.target.value = ""
   }
 
@@ -168,6 +243,7 @@ export default function CategoryManagement() {
     setSelectedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
+  // Category CRUD Operations
   const handleSaveCategory = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError("")
@@ -201,15 +277,18 @@ export default function CategoryManagement() {
         }
 
         const data: ApiResponse<Category> = await response.json()
-        if (!data.success) {
+        
+        // FIXED: Check if response is successful by status
+        if (response.ok) {
+          setSuccess("Category updated successfully!")
+        } else {
           throw new Error(data.message || "Failed to update category")
         }
-
-        setSuccess("Category updated successfully!")
       } else {
         // ADD mode - require image
         if (selectedImages.length === 0) {
           setError("Please select an image")
+          setLoading(false)
           return
         }
 
@@ -229,26 +308,119 @@ export default function CategoryManagement() {
         if (!contentType || !contentType.includes("application/json")) {
           const text = await response.text()
           console.error("Non-JSON response:", text)
-          throw new Error("Server returned non-JSON response")
+          
+          // FIXED: Check if text contains success message
+          if (text.includes("Category created successfully") || text.includes("success")) {
+            setSuccess("Category added successfully!")
+          } else {
+            throw new Error(text || "Failed to add category")
+          }
+        } else {
+          const data: ApiResponse<Category> = await response.json()
+          
+          // FIXED: Handle different response formats
+          if (data.success || data.status === "success" || (data.message && data.message.toLowerCase().includes("success"))) {
+            setSuccess("Category added successfully!")
+          } else {
+            throw new Error(data.message || "Failed to add category")
+          }
         }
-
-        const data: ApiResponse<Category> = await response.json()
-        if (!data.success) {
-          throw new Error(data.message || "Failed to add category")
-        }
-
-        setSuccess("Category added successfully!")
       }
 
       setCategoryName("")
       setSelectedImages([])
       setEditingCategory(null)
-      await fetchCategories() // Auto-refresh after successful save
+      await fetchCategories()
+      await fetchSubCategories()
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : `Failed to ${editingCategory ? "update" : "add"} category`
       setError(errorMessage)
       console.error("Save category error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // SubCategory CRUD Operations
+  const handleSaveSubCategory = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+
+    if (!subCatName.trim()) {
+      setError("Please enter a subcategory name")
+      return
+    }
+
+    if (!subCatTitle.trim()) {
+      setError("Please enter a subcategory title")
+      return
+    }
+
+    if (!selectedCatId) {
+      setError("Please select a category")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const requestBody = {
+        subCatName: subCatName.trim(),
+        subCatTitle: subCatTitle.trim(),
+        catId: selectedCatId
+      }
+
+      let response
+      if (editingSubCategory) {
+        // EDIT mode
+        response = await fetch(`${API_URL}/subcategory/updatesubcat/${editingSubCategory}`, {
+          method: "PUT",
+          headers: {
+            ...getAuthHeaders(),
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        })
+      } else {
+        // ADD mode
+        response = await fetch(`${API_URL}/subcategory/addsubcat`, {
+          method: "POST",
+          headers: {
+            ...getAuthHeaders(),
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        })
+      }
+
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        console.error("Non-JSON response:", text)
+        throw new Error("Server returned non-JSON response")
+      }
+
+      const data: ApiResponse<SubCategory> = await response.json()
+      if (!data.status || data.status !== "success") {
+        throw new Error(data.message || `Failed to ${editingSubCategory ? "update" : "add"} subcategory`)
+      }
+
+      setSuccess(`Subcategory ${editingSubCategory ? "updated" : "added"} successfully!`)
+
+      setSubCatName("")
+      setSubCatTitle("")
+      setSelectedCatId("")
+      setEditingSubCategory(null)
+      await fetchSubCategories()
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : `Failed to ${editingSubCategory ? "update" : "add"} subcategory`
+      setError(errorMessage)
+      console.error("Save subcategory error:", err)
     } finally {
       setLoading(false)
     }
@@ -260,28 +432,51 @@ export default function CategoryManagement() {
     setSelectedImages([])
     setError("")
     setSuccess("")
-    setShowForm(true) // Show form when editing
+    setActiveTab("categories")
+  }
+
+  const handleEditSubCategory = (subCategory: SubCategory) => {
+    setEditingSubCategory(subCategory._id)
+    setSubCatName(subCategory.subCatName)
+    setSubCatTitle(subCategory.subCatTitle)
+    setSelectedCatId(subCategory.catId)
+    setError("")
+    setSuccess("")
+    setActiveTab("subcategories")
   }
 
   const handleCancelEdit = () => {
     setEditingCategory(null)
+    setEditingSubCategory(null)
     setCategoryName("")
+    setSubCatName("")
+    setSubCatTitle("")
+    setSelectedCatId("")
     setSelectedImages([])
     setError("")
     setSuccess("")
   }
 
-  const openDeleteModal = (category: Category) => {
-    setCategoryToDelete(category)
+  const openDeleteModal = (item: Category | SubCategory, type: "category" | "subcategory") => {
+    setItemToDelete(item)
+    setDeleteType(type)
     setDeleteModalOpen(true)
   }
 
-  const handleDeleteCategory = async () => {
-    if (!categoryToDelete) return
+  const handleDelete = async () => {
+    if (!itemToDelete) return
 
     try {
       setLoading(true)
-      const response = await fetch(`${API_URL}/category/${categoryToDelete._id}`, {
+      let url = ""
+      
+      if (deleteType === "category") {
+        url = `${API_URL}/category/${itemToDelete._id}`
+      } else {
+        url = `${API_URL}/subcategory/deletesubcat/${itemToDelete._id}`
+      }
+
+      const response = await fetch(url, {
         method: "DELETE",
         headers: {
           ...getAuthHeaders(),
@@ -298,16 +493,25 @@ export default function CategoryManagement() {
       }
 
       const data: ApiResponse<void> = await response.json()
-      if (!data.success) {
-        throw new Error(data.message || "Failed to delete category")
+      
+      if (deleteType === "category") {
+        if (!data.success) {
+          throw new Error(data.message || "Failed to delete category")
+        }
+      } else {
+        if (!data.status || data.status !== "success") {
+          throw new Error(data.message || "Failed to delete subcategory")
+        }
       }
 
       setDeleteModalOpen(false)
-      setCategoryToDelete(null)
-      setSuccess("Category deleted successfully!")
-      await fetchCategories() // Auto-refresh after successful delete
+      setItemToDelete(null)
+      setSuccess(`${deleteType === "category" ? "Category" : "Subcategory"} deleted successfully!`)
+      
+      await fetchCategories()
+      await fetchSubCategories()
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to delete category"
+      const errorMessage = err instanceof Error ? err.message : `Failed to delete ${deleteType}`
       setError(errorMessage)
       console.error("Delete error:", err)
     } finally {
@@ -319,77 +523,65 @@ export default function CategoryManagement() {
     setError("")
     setSuccess("")
     await fetchCategories()
+    await fetchSubCategories()
   }
 
-  const toggleCategorySelection = (categoryId: string) => {
-    const newSelected = new Set(selectedCategories)
-    if (newSelected.has(categoryId)) {
-      newSelected.delete(categoryId)
-    } else {
-      newSelected.add(categoryId)
-    }
-    setSelectedCategories(newSelected)
+  const toggleCategoryExpansion = (categoryId: string) => {
+    setExpandedCategory(expandedCategory === categoryId ? null : categoryId)
   }
 
-  const selectAllCategories = () => {
-    if (selectedCategories.size === filteredCategories.length) {
-      setSelectedCategories(new Set())
-    } else {
-      setSelectedCategories(new Set(filteredCategories.map((cat) => cat._id)))
-    }
-  }
-
-  const exportCategories = () => {
-    const dataStr = JSON.stringify(categories, null, 2)
-    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr)
-
-    const exportFileDefaultName = `categories-${new Date().toISOString().split("T")[0]}.json`
-
-    const linkElement = document.createElement("a")
-    linkElement.setAttribute("href", dataUri)
-    linkElement.setAttribute("download", exportFileDefaultName)
-    linkElement.click()
+  const getSubCategoriesByCategory = (catId: string) => {
+    return subCategories.filter(subCat => subCat.catId === catId)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-rose-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                <ImageIcon className="w-8 h-8 text-white" />
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Layers className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold text-gray-800">
                   Category Management
                 </h1>
-                <p className="text-slate-600 mt-1">Organize and manage your product categories</p>
+                <p className="text-gray-600 mt-1">Manage your categories and subcategories</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={exportCategories}
-                className="flex items-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-xl transition-all duration-200 hover:scale-105"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </button>
-              <button
-                onClick={handleRefresh}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
-            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 mt-6">
+            <button
+              className={`px-6 py-3 font-medium text-sm transition-colors ${activeTab === "categories" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600 hover:text-gray-900"}`}
+              onClick={() => setActiveTab("categories")}
+            >
+              Categories ({categories.length})
+            </button>
+            <button
+              className={`px-6 py-3 font-medium text-sm transition-colors ${activeTab === "subcategories" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600 hover:text-gray-900"}`}
+              onClick={() => setActiveTab("subcategories")}
+            >
+              Subcategories ({subCategories.length})
+            </button>
           </div>
         </div>
 
+        {/* Error and Success Messages */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <span>{error}</span>
@@ -401,7 +593,7 @@ export default function CategoryManagement() {
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-start gap-3 animate-in slide-in-from-top-2 duration-300">
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg flex items-start gap-3">
             <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <span>{success}</span>
@@ -412,347 +604,563 @@ export default function CategoryManagement() {
           </div>
         )}
 
-        {showForm ? (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 mb-8">
-            <h2 className="text-2xl font-semibold text-slate-800 mb-6 flex items-center gap-3">
-              {editingCategory ? (
-                <>
-                  <Edit className="w-6 h-6 text-blue-600" />
-                  Edit Category
-                </>
-              ) : (
-                <>
-                  <Plus className="w-6 h-6 text-blue-600" />
-                  Add New Category
-                </>
-              )}
-            </h2>
+        {/* Categories Tab Content */}
+        {activeTab === "categories" && (
+          <>
+            {/* Category Form */}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
+                {editingCategory ? (
+                  <>
+                    <Edit className="w-5 h-5 text-blue-600" />
+                    Edit Category
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5 text-blue-600" />
+                    Add New Category
+                  </>
+                )}
+              </h2>
 
-            <form onSubmit={handleSaveCategory} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">Category Name</label>
-                <input
-                  type="text"
-                  value={categoryName}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setCategoryName(e.target.value)}
-                  placeholder="Enter category name..."
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50"
-                />
-              </div>
-
-              {!editingCategory && (
+              <form onSubmit={handleSaveCategory} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">Category Image</label>
-                  <div className="space-y-4">
-                    {/* Image previews */}
-                    {selectedImages.length > 0 && (
-                      <div className="flex flex-wrap gap-4">
-                        {selectedImages.map((img, index) => (
-                          <div key={index} className="relative group">
-                            <div className="w-32 h-32 border-2 border-slate-200 rounded-xl overflow-hidden shadow-md">
-                              <img
-                                src={img.previewUrl || "/placeholder.svg"}
-                                alt=""
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-full text-sm flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
-                              onClick={() => removeImage(index)}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Drag and drop area */}
-                    {selectedImages.length < 1 && (
-                      <div
-                        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
-                          dragOver
-                            ? "border-blue-400 bg-blue-50"
-                            : "border-slate-300 hover:border-slate-400 bg-slate-50/50"
-                        }`}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                      >
-                        <Upload className={`w-12 h-12 mx-auto mb-4 ${dragOver ? "text-blue-500" : "text-slate-400"}`} />
-                        <p className={`text-lg font-medium mb-2 ${dragOver ? "text-blue-600" : "text-slate-600"}`}>
-                          {dragOver ? "Drop your image here" : "Drag & drop an image here"}
-                        </p>
-                        <p className="text-slate-500 mb-4">or</p>
-                        <label className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 shadow-md">
-                          <Plus className="w-4 h-4" />
-                          Choose File
-                          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                        </label>
-                        <p className="text-xs text-slate-400 mt-3">Maximum file size: 2MB</p>
-                      </div>
-                    )}
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category Name</label>
+                  <input
+                    type="text"
+                    value={categoryName}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setCategoryName(e.target.value)}
+                    placeholder="Enter category name..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
-              )}
 
-              <div className="flex justify-end gap-3 pt-6 border-t border-slate-200">
-                {editingCategory && (
+                {!editingCategory && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Category Image</label>
+                    <div className="space-y-4">
+                      {/* Image previews */}
+                      {selectedImages.length > 0 && (
+                        <div className="flex flex-wrap gap-4">
+                          {selectedImages.map((img, index) => (
+                            <div key={index} className="relative">
+                              <div className="w-24 h-24 border border-gray-200 rounded-lg overflow-hidden">
+                                <img
+                                  src={img.previewUrl || "/placeholder.svg"}
+                                  alt=""
+                                  className="object-cover w-full h-full"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs flex items-center justify-center"
+                                onClick={() => removeImage(index)}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Upload area */}
+                      {selectedImages.length < 1 && (
+                        <div
+                          className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                            dragOver
+                              ? "border-blue-400 bg-blue-50"
+                              : "border-gray-300 hover:border-gray-400"
+                          }`}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                        >
+                          <ImageIcon className={`w-10 h-10 mx-auto mb-3 ${dragOver ? "text-blue-500" : "text-gray-400"}`} />
+                          <p className={`text-sm font-medium mb-2 ${dragOver ? "text-blue-600" : "text-gray-600"}`}>
+                            {dragOver ? "Drop your image here" : "Drag & drop an image here"}
+                          </p>
+                          <p className="text-gray-500 text-sm mb-3">or</p>
+                          <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
+                            <Plus className="w-4 h-4" />
+                            Choose File
+                            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                          </label>
+                          <p className="text-xs text-gray-400 mt-2">Max file size: 2MB</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4">
+                  {editingCategory && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                      disabled={loading}
+                    >
+                      Cancel
+                    </button>
+                  )}
                   <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all duration-200 hover:scale-105 disabled:opacity-50"
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
                     disabled={loading}
                   >
-                    Cancel
+                    {loading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : editingCategory ? (
+                      <Check className="w-4 h-4" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
+                    {loading ? "Saving..." : editingCategory ? "Update Category" : "Add Category"}
                   </button>
-                )}
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl flex items-center gap-2 disabled:opacity-50 transition-all duration-200 hover:scale-105 shadow-lg"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : editingCategory ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Plus className="w-4 h-4" />
-                  )}
-                  {loading ? "Saving..." : editingCategory ? "Update Category" : "Add Category"}
-                </button>
-              </div>
-            </form>
-          </div>
-        ) : (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 mb-8">
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl flex items-center gap-2 transition-all duration-200 hover:scale-105 shadow-lg"
-            >
-              <Plus className="w-4 h-4" />
-              Show Form
-            </button>
-          </div>
-        )}
-
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
-            <h2 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
-              <Filter className="w-6 h-6 text-blue-600" />
-              Categories ({filteredCategories.length})
-            </h2>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search categories..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 w-full sm:w-64"
-                />
-              </div>
-
-              {/* View mode toggle */}
-              <div className="flex items-center gap-2 bg-slate-100 rounded-xl p-1">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
-                    viewMode === "grid" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  <Grid3X3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
-                    viewMode === "list" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Bulk actions */}
-          {filteredCategories.length > 0 && (
-            <div className="flex items-center gap-4 mb-6 p-4 bg-slate-50 rounded-xl">
-              <button
-                onClick={selectAllCategories}
-                className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 transition-colors"
-              >
-                <div
-                  className={`w-4 h-4 border-2 rounded ${
-                    selectedCategories.size === filteredCategories.length
-                      ? "bg-blue-600 border-blue-600"
-                      : "border-slate-300"
-                  }`}
-                >
-                  {selectedCategories.size === filteredCategories.length && <Check className="w-3 h-3 text-white" />}
                 </div>
-                {selectedCategories.size === filteredCategories.length ? "Deselect All" : "Select All"}
-              </button>
-
-              {selectedCategories.size > 0 && (
-                <span className="text-sm text-slate-600">{selectedCategories.size} selected</span>
-              )}
+              </form>
             </div>
-          )}
 
-          {loading && (
-            <div className="flex items-center justify-center py-16">
-              <div className="text-center">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-                <span className="text-slate-600 text-lg">Loading categories...</span>
-              </div>
-            </div>
-          )}
+            {/* Categories List */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                  <Folder className="w-5 h-5 text-blue-600" />
+                  Categories List
+                </h2>
 
-          {filteredCategories.length === 0 && !loading ? (
-            <div className="text-center py-16">
-              <ImageIcon className="w-16 h-16 text-slate-300 mx-auto mb-6" />
-              <p className="text-slate-500 text-xl mb-2">{searchTerm ? "No categories found" : "No categories yet"}</p>
-              <p className="text-slate-400">
-                {searchTerm ? "Try adjusting your search terms" : "Add your first category to get started"}
-              </p>
-            </div>
-          ) : (
-            <div
-              className={
-                viewMode === "grid"
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                  : "space-y-4"
-              }
-            >
-              {filteredCategories.map((cat) => (
-                <div
-                  key={cat._id}
-                  className={`group bg-white/60 hover:bg-white/80 rounded-xl border border-white/40 transition-all duration-300 hover:shadow-xl hover:scale-105 ${
-                    viewMode === "list" ? "flex items-center p-4" : "p-6"
-                  }`}
-                >
-                  {/* Selection checkbox */}
-                  <div className={`${viewMode === "list" ? "mr-4" : "mb-4"}`}>
-                    <button
-                      onClick={() => toggleCategorySelection(cat._id)}
-                      className={`w-5 h-5 border-2 rounded transition-all duration-200 ${
-                        selectedCategories.has(cat._id)
-                          ? "bg-blue-600 border-blue-600"
-                          : "border-slate-300 hover:border-blue-400"
-                      }`}
-                    >
-                      {selectedCategories.has(cat._id) && <Check className="w-3 h-3 text-white" />}
-                    </button>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search categories..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                    />
                   </div>
 
-                  {viewMode === "grid" ? (
-                    <>
-                      <div className="flex items-start justify-between mb-4">
-                        <h3 className="font-semibold text-slate-800 text-lg truncate pr-2 flex-1">
-                          {cat.categoryname}
-                        </h3>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`p-2 rounded transition-colors ${
+                        viewMode === "grid" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={`p-2 rounded transition-colors ${
+                        viewMode === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
+                    <span className="text-gray-600">Loading categories...</span>
+                  </div>
+                </div>
+              ) : filteredCategories.length === 0 ? (
+                <div className="text-center py-12">
+                  <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-lg mb-1">{searchTerm ? "No categories found" : "No categories yet"}</p>
+                  <p className="text-gray-400">
+                    {searchTerm ? "Try adjusting your search" : "Add your first category to get started"}
+                  </p>
+                </div>
+              ) : viewMode === "grid" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredCategories.map((cat) => {
+                    const categorySubCats = getSubCategoriesByCategory(cat._id)
+                    return (
+                      <div
+                        key={cat._id}
+                        className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                      >
+                        <div className="h-48 overflow-hidden">
+                          <img
+                            src={cat.catImg || "/placeholder.svg"}
+                            alt={cat.categoryname}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                              ;(e.target as HTMLImageElement).src = "/abstract-categories.png"
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-800 text-lg truncate">
+                                {cat.categoryname}
+                              </h3>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {categorySubCats.length} subcategories
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                onClick={() => handleEditCategory(cat)}
+                                title="Edit category"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => openDeleteModal(cat, "category")}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Delete category"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+
                           <button
-                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200 hover:scale-110"
-                            onClick={() => handleEditCategory(cat)}
-                            title="Edit category"
+                            onClick={() => toggleCategoryExpansion(cat._id)}
+                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 w-full"
                           >
-                            <Edit size={16} />
+                            {expandedCategory === cat._id ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                            {expandedCategory === cat._id ? "Hide" : "View"} Subcategories
                           </button>
-                          <button
-                            onClick={() => openDeleteModal(cat)}
-                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 hover:scale-110"
-                            title="Delete category"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+
+                          {expandedCategory === cat._id && categorySubCats.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <h4 className="text-sm font-medium text-gray-700 mb-2">Subcategories:</h4>
+                              <div className="space-y-2">
+                                {categorySubCats.map((subCat) => (
+                                  <div key={subCat._id} className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded">
+                                    <span className="text-gray-700">{subCat.subCatName}</span>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => handleEditSubCategory(subCat)}
+                                        className="text-blue-600 hover:text-blue-800"
+                                      >
+                                        <Edit size={12} />
+                                      </button>
+                                      <button
+                                        onClick={() => openDeleteModal(subCat, "subcategory")}
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-
-                      <div className="aspect-square rounded-xl overflow-hidden bg-slate-200 shadow-md">
-                        <img
-                          src={cat.catImg || "/placeholder.svg"}
-                          alt={cat.categoryname}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                            ;(e.target as HTMLImageElement).src = "/abstract-categories.png"
-                          }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-200 shadow-md mr-4 flex-shrink-0">
-                        <img
-                          src={cat.catImg || "/placeholder.svg"}
-                          alt={cat.categoryname}
-                          className="w-full h-full object-cover"
-                          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                            ;(e.target as HTMLImageElement).src = "/abstract-categories.png"
-                          }}
-                        />
-                      </div>
-
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-slate-800 text-lg">{cat.categoryname}</h3>
-                      </div>
-
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200"
-                          onClick={() => handleEditCategory(cat)}
-                          title="Edit category"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(cat)}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200"
-                          title="Delete category"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </>
-                  )}
+                    )
+                  })}
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-3">
+                  {filteredCategories.map((cat) => {
+                    const categorySubCats = getSubCategoriesByCategory(cat._id)
+                    return (
+                      <div
+                        key={cat._id}
+                        className="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+                      >
+                        <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 mr-4">
+                          <img
+                            src={cat.catImg || "/placeholder.svg"}
+                            alt={cat.categoryname}
+                            className="w-full h-full object-cover"
+                            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                              ;(e.target as HTMLImageElement).src = "/abstract-categories.png"
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-800">{cat.categoryname}</h3>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {categorySubCats.length} subcategories
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
+                                onClick={() => handleEditCategory(cat)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => openDeleteModal(cat, "category")}
+                                className="px-3 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => toggleCategoryExpansion(cat._id)}
+                                className="px-3 py-1 text-gray-600 hover:bg-gray-50 rounded text-sm"
+                              >
+                                {expandedCategory === cat._id ? "Hide" : "Show"}
+                              </button>
+                            </div>
+                          </div>
+
+                          {expandedCategory === cat._id && categorySubCats.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <h4 className="text-sm font-medium text-gray-700 mb-2">Subcategories:</h4>
+                              <div className="grid grid-cols-2 gap-2">
+                                {categorySubCats.map((subCat) => (
+                                  <div key={subCat._id} className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded">
+                                    <span className="text-gray-700">{subCat.subCatName}</span>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => handleEditSubCategory(subCat)}
+                                        className="text-blue-600 hover:text-blue-800 text-xs"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => openDeleteModal(subCat, "subcategory")}
+                                        className="text-red-600 hover:text-red-800 text-xs"
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
+
+        {/* Subcategories Tab Content */}
+        {activeTab === "subcategories" && (
+          <>
+            {/* Subcategory Form */}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
+                {editingSubCategory ? (
+                  <>
+                    <Edit className="w-5 h-5 text-blue-600" />
+                    Edit Subcategory
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5 text-blue-600" />
+                    Add New Subcategory
+                  </>
+                )}
+              </h2>
+
+              <form onSubmit={handleSaveSubCategory} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory Name</label>
+                    <input
+                      type="text"
+                      value={subCatName}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setSubCatName(e.target.value)}
+                      placeholder="Enter subcategory name..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Parent Category</label>
+                    <select
+                      value={selectedCatId}
+                      onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedCatId(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select a category</option>
+                      {categories.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.categoryname}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea
+                    value={subCatTitle}
+                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setSubCatTitle(e.target.value)}
+                    placeholder="Enter description..."
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  {editingSubCategory && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                      disabled={loading}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : editingSubCategory ? (
+                      <Check className="w-4 h-4" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
+                    {loading ? "Saving..." : editingSubCategory ? "Update Subcategory" : "Add Subcategory"}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Subcategories List */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-blue-600" />
+                  Subcategories List
+                </h2>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search subcategories..."
+                    value={subCatSearchTerm}
+                    onChange={(e) => setSubCatSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                  />
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
+                    <span className="text-gray-600">Loading subcategories...</span>
+                  </div>
+                </div>
+              ) : filteredSubCategories.length === 0 ? (
+                <div className="text-center py-12">
+                  <Layers className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-lg mb-1">
+                    {subCatSearchTerm ? "No subcategories found" : "No subcategories yet"}
+                  </p>
+                  <p className="text-gray-400">
+                    {subCatSearchTerm ? "Try adjusting your search" : "Add your first subcategory to get started"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredSubCategories.map((subCat) => (
+                    <div
+                      key={subCat._id}
+                      className="flex items-center p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+                    >
+                      <div className="w-12 h-12 rounded bg-blue-50 flex items-center justify-center flex-shrink-0 mr-4">
+                        <Layers className="w-6 h-6 text-blue-400" />
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-gray-800">{subCat.subCatName}</h3>
+                            <p className="text-sm text-gray-600 mt-1">{subCat.subCatTitle}</p>
+                            <div className="mt-1">
+                              <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                                {getCategoryName(subCat.catId)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
+                              onClick={() => handleEditSubCategory(subCat)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(subCat, "subcategory")}
+                              className="px-3 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
+      {/* Delete Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-8 h-8 text-red-600" />
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">Confirm Delete</h2>
-              <p className="text-slate-600">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Confirm Delete</h2>
+              <p className="text-gray-600">
                 Are you sure you want to delete{" "}
-                <span className="font-semibold text-slate-800">"{categoryToDelete?.categoryname}"</span>?
+                <span className="font-semibold text-gray-800">
+                  {deleteType === "category" 
+                    ? (itemToDelete as Category)?.categoryname 
+                    : (itemToDelete as SubCategory)?.subCatName}
+                </span>?
               </p>
               <p className="text-sm text-red-600 mt-2">This action cannot be undone.</p>
             </div>
 
             <div className="flex gap-3">
               <button
-                className="flex-1 px-4 py-3 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl transition-all duration-200 hover:scale-105"
-                onClick={() => setDeleteModalOpen(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors"
+                onClick={() => {
+                  setDeleteModalOpen(false)
+                  setItemToDelete(null)
+                }}
                 disabled={loading}
               >
                 Cancel
               </button>
               <button
-                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:opacity-50 transition-all duration-200 hover:scale-105 shadow-lg"
-                onClick={handleDeleteCategory}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                onClick={handleDelete}
                 disabled={loading}
               >
                 {loading ? <RefreshCw className="w-4 h-4 animate-spin mx-auto" /> : "Delete"}

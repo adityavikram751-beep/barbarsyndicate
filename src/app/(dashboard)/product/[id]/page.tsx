@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MessageCircle, ShoppingCart, Heart, Share2, Loader, ChevronLeft, ChevronRight, X, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MessageCircle, ShoppingCart, Heart, Share2, Loader, ChevronLeft, ChevronRight, X, CheckCircle, Minus, Plus, Check } from 'lucide-react';
 
 export interface Product {
   id: string;
@@ -12,7 +12,7 @@ export interface Product {
   description: string;
   isFeature: boolean;
   images: string[];
-  variants: { price: string; quantity: string; _id: string }[];
+  variants: { price: string; quantity: string; _id: string; variantName?: string; variantColor?: string; variantSize?: string; variantSKU?: string; }[];
   points: string[];
 }
 
@@ -21,7 +21,7 @@ interface ApiProduct {
   name: string;
   brand: string;
   categoryId: string;
-  variants: { price: string; quantity: string; _id: string }[];
+  variants: { price: string; quantity: string; _id: string; variantName?: string; variantColor?: string; variantSize?: string; variantSKU?: string; }[];
   description: string;
   isFeature: boolean;
   images: string[];
@@ -51,6 +51,7 @@ export default function ProductDetail() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -66,7 +67,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const storedUserId = localStorage.getItem('userId'); // Assuming userId is stored in localStorage
+    const storedUserId = localStorage.getItem('userId');
     setIsAuthenticated(!!token);
     setUserId(storedUserId);
 
@@ -166,13 +167,18 @@ export default function ProductDetail() {
 
       // Get the selected variant
       const selectedVariantData = product.variants[selectedVariant];
+      const totalPrice = (parseFloat(selectedVariantData.price) * quantity).toFixed(2);
 
       const enquiryData = {
         id: userId,
         productId: product.id,
         variants: [{
+          variantId: selectedVariantData._id,
+          variantName: selectedVariantData.variantName || selectedVariantData.quantity,
           price: selectedVariantData.price,
-          quantity: selectedVariantData.quantity
+          quantity: selectedVariantData.quantity,
+          selectedQuantity: quantity,
+          totalPrice: totalPrice
         }]
       };
 
@@ -181,7 +187,7 @@ export default function ProductDetail() {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`, // If your API requires authorization
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(enquiryData),
       });
@@ -208,7 +214,10 @@ export default function ProductDetail() {
   const handleWhatsAppClick = () => {
     if (!product || product.variants.length === 0) return;
     const selectedOption = product.variants[selectedVariant];
-    const message = `Hi! I'm interested in ${product.name} (${selectedOption.quantity}). Can you please provide more details${isAuthenticated ? ` and confirm the price of ₹${selectedOption.price}?` : '?'}`;
+    const variantName = selectedOption.variantName || selectedOption.quantity;
+    
+    const message = `Hi! I'm interested in:\n\nProduct: ${product.name}\nVariant: ${variantName}\nQuantity: ${quantity} units\n${isAuthenticated ? `Price per unit: ₹${selectedOption.price}\nTotal Price: ₹${(parseFloat(selectedOption.price) * quantity).toFixed(2)}` : ''}\n\nCan you please provide more details?`;
+    
     const phoneNumber = '919876543210';
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
@@ -243,10 +252,28 @@ export default function ProductDetail() {
     return Math.min(...variants.map(v => parseFloat(v.price)));
   };
 
+  // Quantity functions
+  const handleIncrement = () => {
+    setQuantity(prev => prev + 1);
+  };
+
+  const handleDecrement = () => {
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
+    }
+  };
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value > 0) {
+      setQuantity(value);
+    }
+  };
+
   // Enquiry Success Popup Component
   const EnquirySuccessPopup = () => (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 max-w-sm mx-4 shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <CheckCircle className="h-6 w-6 text-green-500" />
@@ -290,16 +317,20 @@ export default function ProductDetail() {
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading product</h3>
           <p className="text-gray-600 mb-4">{error || 'Product not found'}</p>
-          <Link
+          {/* <Link
             href="/products"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors"
           >
             Back to Products
-          </Link>
+          </Link> */}
         </div>
       </div>
     );
   }
+
+  const selectedVariantData = product.variants[selectedVariant];
+  const variantName = selectedVariantData?.variantName || selectedVariantData?.quantity || `Variant ${selectedVariant + 1}`;
+  const totalPrice = selectedVariantData ? (parseFloat(selectedVariantData.price) * quantity) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -404,44 +435,100 @@ export default function ProductDetail() {
             
             {/* Variant Selection */}
             {product.variants && product.variants.length > 0 && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Variant & Pricing</h3>
-                  <div className="grid grid-cols-1 gap-3">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Variant</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {product.variants.map((variant, index) => (
-                      <label
+                      <button
                         key={variant._id}
-                        className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        onClick={() => setSelectedVariant(index)}
+                        className={`p-4 border-2 rounded-lg text-left transition-all ${
                           selectedVariant === index
                             ? 'border-purple-600 bg-purple-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            name="variant"
-                            value={index}
-                            checked={selectedVariant === index}
-                            onChange={() => setSelectedVariant(index)}
-                            className="sr-only"
-                          />
-                          <div className="space-y-1">
-                            <div className="font-medium text-gray-900">{variant.quantity}</div>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              {variant.variantName || variant.quantity || `Variant ${index + 1}`}
+                            </h4>
+                            {variant.variantColor && (
+                              <p className="text-sm text-gray-600 mt-1">Color: {variant.variantColor}</p>
+                            )}
+                            {variant.variantSize && (
+                              <p className="text-sm text-gray-600">Size: {variant.variantSize}</p>
+                            )}
+                            {variant.variantSKU && (
+                              <p className="text-xs text-gray-500 mt-1">SKU: {variant.variantSKU}</p>
+                            )}
                           </div>
+                          {selectedVariant === index && (
+                            <Check className="h-5 w-5 text-purple-600" />
+                          )}
                         </div>
-                        <div className="text-right">
-                          <div
-                            className={`text-lg font-bold text-purple-600 ${
-                              !isAuthenticated ? 'blur-sm select-none' : ''
-                            }`}
-                          >
-                            {isAuthenticated ? `₹${parseFloat(variant.price).toFixed(2)}` : 'Login to view price'}
-                          </div>
-                        </div>
-                      </label>
+                        <p className={`text-lg font-bold mt-3 ${
+                          isAuthenticated ? 'text-purple-600' : 'text-gray-400'
+                        }`}>
+                          {isAuthenticated ? `₹${parseFloat(variant.price).toFixed(2)}` : 'Login to view price'}
+                        </p>
+                      </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Quantity Selection Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Quantity</h3>
+                  
+                  <div className="flex items-center gap-4">
+                    {/* Plus/Minus Quantity Selector */}
+                    <div className="flex items-center border rounded-lg bg-white">
+                      <button
+                        onClick={handleDecrement}
+                        disabled={quantity <= 1}
+                        className="p-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg transition-colors"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      
+                      <div className="px-6 py-3 border-x min-w-[60px] text-center">
+                        <span className="text-lg font-medium">{quantity}</span>
+                      </div>
+                      
+                      <button
+                        onClick={handleIncrement}
+                        className="p-3 hover:bg-gray-100 rounded-r-lg transition-colors"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                    {/* Total Price Display */}
+                    {isAuthenticated && selectedVariantData && (
+                      <div className="ml-auto text-right">
+                        <p className="text-2xl font-bold text-gray-900">
+                          ₹{totalPrice.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          ₹{parseFloat(selectedVariantData.price).toFixed(2)} × {quantity} units
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Manual Input for large quantities */}
+                  {/* <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Or enter quantity:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={handleQuantityChange}
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div> */}
                 </div>
               </div>
             )}
@@ -464,16 +551,16 @@ export default function ProductDetail() {
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={handleWhatsAppClick}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2"
                 disabled={!isAuthenticated || !product.variants.length}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <MessageCircle className="h-5 w-5" />
                 <span>Contact via WhatsApp</span>
               </button>
               <button
                 onClick={handleEnquiry}
-                disabled={!isAuthenticated || isSubmittingEnquiry}
-                className="flex-1 border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!isAuthenticated || isSubmittingEnquiry || !product.variants.length}
+                className="flex-1 border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmittingEnquiry ? (
                   <Loader className="h-5 w-5 animate-spin" />
@@ -481,7 +568,10 @@ export default function ProductDetail() {
                   <ShoppingCart className="h-5 w-5" />
                 )}
                 <span>
-                  {isSubmittingEnquiry ? 'Adding...' : 'Add to Inquiry'}
+                  {isSubmittingEnquiry ? 'Adding...' : 
+                   isAuthenticated && selectedVariantData ? 
+                   `Add to Inquiry - ₹${totalPrice.toFixed(2)}` : 
+                   'Add to Inquiry'}
                 </span>
               </button>
             </div>
@@ -492,7 +582,7 @@ export default function ProductDetail() {
                 <div className="text-amber-800">
                   <h3 className="font-semibold text-lg mb-2">Login Required</h3>
                   <p className="text-sm">
-                    Please login to view pricing, variant options, and place orders.
+                    Please login to view pricing, select variants, choose quantity, and place orders.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -523,13 +613,13 @@ export default function ProductDetail() {
                 <Link
                   key={similarProduct._id}
                   href={`/product/${similarProduct._id}`}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
                 >
-                  <div className="aspect-square rounded-t-xl overflow-hidden">
+                  <div className="aspect-square relative overflow-hidden">
                     <img
                       src={similarProduct.images[0] || '/placeholder-image.jpg'}
                       alt={similarProduct.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                   <div className="p-4">
@@ -543,14 +633,15 @@ export default function ProductDetail() {
                         </span>
                       )}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 truncate mb-2">{similarProduct.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-1 mb-2">{similarProduct.name}</h3>
                     <p className="text-sm text-gray-600 line-clamp-2 mb-2">{similarProduct.description}</p>
-                    {/* <div className="text-lg font-bold text-purple-600">
+                    <div className={`text-lg font-bold ${
+                      isAuthenticated ? 'text-purple-600' : 'text-gray-400'
+                    }`}>
                       {isAuthenticated && similarProduct.variants.length > 0 
-                        // ? `From ₹${getLowestPrice(similarProduct.variants).toFixed(2)}` 
-                        ? 'Login to view price'
-                      }
-                    </div> */}
+                        ? `From ₹${getLowestPrice(similarProduct.variants).toFixed(2)}` 
+                        : 'Login to view price'}
+                    </div>
                   </div>
                 </Link>
               ))}

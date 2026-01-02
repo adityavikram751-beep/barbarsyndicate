@@ -119,7 +119,7 @@ export default function EnquiryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+      <div className="min-h-screen bg-rose-50 flex justify-center items-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your enquiries...</p>
@@ -130,7 +130,7 @@ export default function EnquiryPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+      <div className="min-h-screen bg-rose-50 flex justify-center items-center">
         <Card className="max-w-md w-full mx-4">
           <CardContent className="pt-6">
             <div className="text-center">

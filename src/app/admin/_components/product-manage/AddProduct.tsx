@@ -1,4 +1,5 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Plus, X, Trash2 } from "lucide-react"
 
+// --- Type Definitions ---
 interface Product {
   id: string
   name: string
@@ -28,6 +30,7 @@ interface Product {
   }
   brand?: string
   categoryId?: string
+  subcategoryId?: string
   points?: string[]
   isFeature?: boolean
   variants?: { price: string; quantity: string }[]
@@ -44,11 +47,22 @@ interface Brand {
   brand: string
 }
 
+// SubCategory interface
+interface SubCategory {
+  _id: string
+  subCatName: string
+  subCatTitle: string
+  catId: string
+  isDelete: boolean
+  __v: number
+}
+
 interface FormData {
   name: string
   description: string
   brand: string
   categoryId: string
+  subcategoryId: string
   points: string
   isFeature: boolean
 }
@@ -61,6 +75,7 @@ interface Variant {
 interface AddProductProps {
   onAddProduct: (product: Product) => void
 }
+// --- End Type Definitions ---
 
 export function AddProduct({ onAddProduct }: AddProductProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -69,6 +84,7 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
     description: "",
     brand: "",
     categoryId: "",
+    subcategoryId: "",
     points: "",
     isFeature: false,
   })
@@ -83,12 +99,27 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
   const [error, setError] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([])
+  const [isSubCatLoading, setIsSubCatLoading] = useState(false)
 
-  // Fetch categories and brands
+  const BASE_URL = "https://barber-syndicate.vercel.app"
+
+  // --- 1. Fetch Initial Data (Brands and Categories) ---
   useEffect(() => {
+    if (!isOpen) return
+
+    const token = localStorage.getItem("adminToken")
+    
+    if (!token) {
+      setError("Authentication token not found. Please log in again.")
+      return
+    }
+
     const fetchCategories = async () => {
       try {
-        const res = await fetch("https://barber-syndicate.vercel.app/api/v1/category")
+        const res = await fetch(`${BASE_URL}/api/v1/category`, { 
+          headers: { Authorization: `Bearer ${token}` }
+        })
         const data = await res.json()
         if (data.success) {
           setCategories(data.data)
@@ -101,13 +132,19 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
     }
 
     const fetchBrands = async () => {
+      const url = `${BASE_URL}/api/v1/brands/getAll`
       try {
-        const res = await fetch("https://barber-syndicate.vercel.app/api/v1/brands")
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }})
+        if (!res.ok) {
+          console.error(`Brand fetch failed with status ${res.status}`)
+          return
+        }
+
         const data = await res.json()
-        if (data.success) {
+        if (data.success && Array.isArray(data.data)) {
           setBrands(data.data)
         } else {
-          console.error("Failed to fetch brands:", data.message)
+          console.error("Failed to fetch brands:", data.message || data)
         }
       } catch (err) {
         console.error("Error fetching brands:", err)
@@ -116,36 +153,82 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
 
     fetchCategories()
     fetchBrands()
-  }, [])
-
-  // Clean up image previews to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach((url) => URL.revokeObjectURL(url))
-    }
-  }, [imagePreviews])
-
-  // Reset form when dialog is closed
-  useEffect(() => {
-    if (!isOpen) {
-      setImages([])
-      setImagePreviews([])
-      setVariants([
-        { price: "", quantity: "1" },
-        { price: "", quantity: "12Pcs" },
-        { price: "", quantity: "Carton" },
-      ])
-      setFormData({
-        name: "",
-        description: "",
-        brand: "",
-        categoryId: "",
-        points: "",
-        isFeature: false,
-      })
-      setError(null)
-    }
   }, [isOpen])
+
+  // --- 2. Fetch Subcategories based on Category ID ---
+  useEffect(() => {
+    const token = localStorage.getItem("adminToken")
+    const categoryId = formData.categoryId
+
+    if (!categoryId || !token) {
+      setSubCategories([])
+      setFormData(prev => ({ ...prev, subcategoryId: "" }))
+      return
+    }
+
+    const fetchSubCategories = async () => {
+      setIsSubCatLoading(true)
+      const url = `${BASE_URL}/api/v1/subcategory/getSubCat?catId=${categoryId}`
+
+      try {
+        const res = await fetch(url, {
+          method: 'GET', // API expects GET method with query parameter
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          }
+        })
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
+        }
+        
+        const data = await res.json()
+        
+        if (data.status === "success" && Array.isArray(data.data)) {
+          // Filter only active subcategories (not deleted)
+          const activeSubCats = data.data.filter((sub: SubCategory) => !sub.isDelete)
+          setSubCategories(activeSubCats)
+          
+          // Reset subcategoryId if current selection is not in new list
+          if (!activeSubCats.find((sub: SubCategory) => sub._id === formData.subcategoryId)) {
+            setFormData(prev => ({ ...prev, subcategoryId: "" }))
+          }
+        } else {
+          console.error("Failed to fetch subcategories:", data.message || data)
+          setSubCategories([])
+        }
+      } catch (err) {
+        console.error("Error fetching subcategories:", err)
+        setSubCategories([])
+      } finally {
+        setIsSubCatLoading(false)
+      }
+    }
+
+    fetchSubCategories()
+  }, [formData.categoryId, formData.subcategoryId])
+
+  // --- 3. Handlers ---
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCatId = e.target.value
+    setFormData(prev => ({ 
+      ...prev, 
+      categoryId: newCatId,
+      subcategoryId: "" // Reset subcategory when category changes
+    }))
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { id, value, type } = e.target
+    
+    if (type === 'checkbox') {
+      const checkbox = e.target as HTMLInputElement
+      setFormData(prev => ({ ...prev, [id]: checkbox.checked }))
+    } else {
+      setFormData(prev => ({ ...prev, [id]: value }))
+    }
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -167,43 +250,54 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
     })
   }
 
-  // Update variant values
   const updateVariant = (index: number, field: keyof Variant, value: string) => {
     if (field === "price" && value && !/^\d*\.?\d*$/.test(value)) {
-      return // Only allow numbers and decimal points for price
+      return
     }
     const updated = [...variants]
     updated[index][field] = value
     setVariants(updated)
   }
 
-  // Add new variant (optional, beyond the fixed 3)
-  const addVariant = () => {
-    setVariants([...variants, { price: "", quantity: "" }])
-  }
-
-  // Remove variant (only for additional variants beyond the first 3)
-  const removeVariant = (index: number) => {
-    if (index >= 3) {
-      setVariants(variants.filter((_, i) => i !== index))
+  // Reset form when dialog is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setImages([])
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url))
+      setImagePreviews([])
+      setVariants([
+        { price: "", quantity: "1" },
+        { price: "", quantity: "12Pcs" },
+        { price: "", quantity: "Carton" },
+      ])
+      setFormData({
+        name: "",
+        description: "",
+        brand: "",
+        categoryId: "",
+        subcategoryId: "",
+        points: "",
+        isFeature: false,
+      })
+      setError(null)
+      setSubCategories([])
+      setIsSubCatLoading(false)
     }
-  }
+  }, [isOpen])
 
   // Submit form
   const handleSubmit = async () => {
-    // Validate required fields
-    if (!formData.name || !formData.categoryId || !formData.brand) {
-      setError("Please fill in all required fields (Name, Category, Brand).")
+    // Validation
+    if (!formData.name || !formData.categoryId || !formData.subcategoryId || !formData.brand) {
+      setError("Please fill in all required fields (Name, Category, Subcategory, Brand).")
       return
     }
     if (images.length === 0) {
       setError("Please add at least one image (max 5).")
       return
     }
-    const cleanedVariants = variants.map((v) => ({ ...v, price: v.price || "0" }))
-    const fixedVariants = cleanedVariants.slice(0, 3)
-    if (fixedVariants.some(v => !v.price || parseFloat(v.price) <= 0)) {
-      setError("Please provide valid prices for all three required variants (Single, Dozen, Carton).")
+    if (!variants[0]?.price || !variants[1]?.price || !variants[2]?.price) {
+      setError("Please fill in all pricing fields (Single, Dozen, Carton).")
       return
     }
 
@@ -217,50 +311,55 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
       }
 
       const data = new FormData()
+      
+      // Basic Fields
       data.append("name", formData.name)
       data.append("description", formData.description)
       data.append("categoryId", formData.categoryId)
+      data.append("subcategoryId", formData.subcategoryId)
       data.append("brand", formData.brand)
       data.append("isFeature", formData.isFeature ? "true" : "false")
-      const pointsArray =
-        formData.points && formData.points.trim() !== ""
-          ? formData.points.split("\n").map((s) => s.trim()).filter(Boolean)
-          : []
+      
+      // Points
+      const pointsArray = formData.points && formData.points.trim() !== "" 
+        ? formData.points.split("\n").map((s) => s.trim()).filter(Boolean) 
+        : []
       data.append("points", JSON.stringify(pointsArray))
+
+      // Variants
+      const cleanedVariants = variants.map((v) => ({ ...v, price: v.price || "0" }))
       data.append("variants", JSON.stringify(cleanedVariants))
+      
+      // Images
       images.forEach((img) => data.append("image", img))
 
-      // Log FormData for debugging
-      for (const [key, value] of data.entries()) {
-        console.log(`${key}:`, value)
-      }
-
-      const res = await fetch("https://barber-syndicate.vercel.app/api/v1/product", {
+      // Submit to API
+      const res = await fetch(`${BASE_URL}/api/v1/product`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: data,
       })
 
       const result = await res.json()
-      console.log("Server response:", result)
-
-      if (res.ok) {
+      
+      if (res.ok && result.success) {
         const newProduct: Product = {
-          id: result._id || crypto.randomUUID(),
+          id: result._id || result.data?._id || crypto.randomUUID(),
           name: formData.name,
-          image: result.image || imagePreviews[0] || "/placeholder.svg?height=100&width=100",
+          image: result.image || result.data?.image || imagePreviews[0] || "/placeholder.svg",
           description: formData.description,
           pricing: {
-            single: parseFloat(fixedVariants[0]?.price) || 0,
-            dozen: parseFloat(fixedVariants[1]?.price) || 0,
-            carton: parseFloat(fixedVariants[2]?.price) || 0,
+            single: parseFloat(cleanedVariants[0]?.price) || 0,
+            dozen: parseFloat(cleanedVariants[1]?.price) || 0,
+            carton: parseFloat(cleanedVariants[2]?.price) || 0,
           },
           brand: formData.brand,
           categoryId: formData.categoryId,
+          subcategoryId: formData.subcategoryId,
           points: pointsArray,
           isFeature: formData.isFeature,
           variants: cleanedVariants,
-          images: result.images || imagePreviews,
+          images: result.images || result.data?.images || imagePreviews,
         }
         onAddProduct(newProduct)
         setIsOpen(false)
@@ -303,31 +402,31 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
             </div>
           )}
           
-          {/* Basic Info Section */}
+          {/* 1. Product Name and Brand Section */}
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium text-gray-700">
                 Product Name <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="border-rose-200 focus:border-rose-500 focus:ring-rose-500"
-                placeholder="Enter product name"
+              <Input 
+                id="name" 
+                value={formData.name} 
+                onChange={handleInputChange} 
+                className="border-rose-200 focus:border-rose-500 focus:ring-rose-500" 
+                placeholder="Enter product name" 
                 required
               />
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="brand" className="text-sm font-medium text-gray-700">
                 Brand <span className="text-red-500">*</span>
               </Label>
-              <select
-                id="brand"
-                value={formData.brand}
-                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                className="w-full px-3 py-2 border border-rose-200 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white"
+              <select 
+                id="brand" 
+                value={formData.brand} 
+                onChange={handleInputChange} 
+                className="w-full px-3 py-2 border border-rose-200 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white" 
                 required
               >
                 <option value="">Select Brand</option>
@@ -340,28 +439,17 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium text-gray-700">
-              Description
-            </Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 min-h-[100px]"
-              placeholder="Enter product description..."
-            />
-          </div>
-
+          {/* 2. Category and Subcategory Section */}
           <div className="grid md:grid-cols-2 gap-6">
+            {/* Category Select */}
             <div className="space-y-2">
-              <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="categoryId" className="text-sm font-medium text-gray-700">
                 Category <span className="text-red-500">*</span>
               </Label>
               <select
-                id="category"
+                id="categoryId"
                 value={formData.categoryId}
-                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                onChange={handleCategoryChange}
                 className="w-full px-3 py-2 border border-rose-200 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white"
                 required
               >
@@ -373,14 +461,62 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
                 ))}
               </select>
             </div>
-
+            
+            {/* Subcategory Select */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">Featured Product</Label>
+              <Label htmlFor="subcategoryId" className="text-sm font-medium text-gray-700">
+                Subcategory <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="subcategoryId"
+                value={formData.subcategoryId}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-rose-200 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white"
+                required
+                disabled={!formData.categoryId || isSubCatLoading}
+              >
+                <option value="">
+                  {!formData.categoryId 
+                    ? 'Select category first'
+                    : isSubCatLoading 
+                    ? 'Loading subcategories...' 
+                    : subCategories.length === 0
+                    ? 'No subcategories found'
+                    : 'Select Subcategory'}
+                </option>
+                {subCategories.map((subCat) => (
+                  <option key={subCat._id} value={subCat._id}>
+                    {subCat.subCatName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* 3. Description, Featured, and Points Section */}
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+              Description
+            </Label>
+            <Textarea 
+              id="description" 
+              value={formData.description} 
+              onChange={handleInputChange} 
+              className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 min-h-[100px]" 
+              placeholder="Enter product description..."
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">
+                Featured Product
+              </Label>
               <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isFeature"
-                  checked={formData.isFeature}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isFeature: !!checked })}
+                <Checkbox 
+                  id="isFeature" 
+                  checked={formData.isFeature} 
+                  onCheckedChange={(checked) => setFormData({ ...formData, isFeature: !!checked })} 
                   className="border-rose-200 focus:ring-rose-500"
                 />
                 <Label htmlFor="isFeature" className="text-sm text-gray-600">
@@ -390,21 +526,20 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
             </div>
           </div>
 
-          {/* Points Section */}
           <div className="space-y-2">
             <Label htmlFor="points" className="text-sm font-medium text-gray-700">
               Product Points (one per line)
             </Label>
-            <Textarea
-              id="points"
-              value={formData.points}
-              onChange={(e) => setFormData({ ...formData, points: e.target.value })}
-              className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 min-h-[80px]"
+            <Textarea 
+              id="points" 
+              value={formData.points} 
+              onChange={handleInputChange} 
+              className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 min-h-[80px]" 
               placeholder="Enter product points/benefits, one per line..."
             />
           </div>
 
-          {/* Pricing Section */}
+          {/* 4. Pricing Section */}
           <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-lg border border-rose-100">
             <h3 className="text-lg font-semibold text-rose-900 mb-4 flex items-center">
               Pricing Structure <span className="text-sm text-rose-600 ml-2">(Required)</span>
@@ -418,13 +553,13 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
                       <Label className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                         {labels[i]}
                       </Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder={`Price for ${labels[i].toLowerCase()}`}
-                        value={v.price}
-                        onChange={(e) => updateVariant(i, "price", e.target.value)}
-                        className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 text-lg font-medium"
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder={`Price for ${labels[i].toLowerCase()}`} 
+                        value={v.price} 
+                        onChange={(e) => updateVariant(i, "price", e.target.value)} 
+                        className="border-rose-200 focus:border-rose-500 focus:ring-rose-500 text-lg font-medium" 
                         required
                       />
                       <p className="text-xs text-gray-500 mt-1">{v.quantity}</p>
@@ -432,65 +567,20 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
                   </div>
                 )
               })}
-              
-              {/* Optional Additional Variants */}
-              {variants.length > 3 && (
-                <>
-                  <div className="border-t border-rose-200 pt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Variants</h4>
-                    {variants.slice(3).map((v, i) => (
-                      <div key={i + 3} className="flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-md">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Price"
-                          value={v.price}
-                          onChange={(e) => updateVariant(i + 3, "price", e.target.value)}
-                          className="flex-1 border-rose-200 focus:border-rose-500"
-                        />
-                        <Input
-                          type="text"
-                          placeholder="Quantity"
-                          value={v.quantity}
-                          onChange={(e) => updateVariant(i + 3, "quantity", e.target.value)}
-                          className="flex-1 border-rose-200 focus:border-rose-500"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeVariant(i + 3)}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addVariant}
-                    className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300"
-                  >
-                    + Add Custom Variant
-                  </Button>
-                </>
-              )}
             </div>
           </div>
 
-          {/* Images Section */}
+          {/* 5. Images Section */}
           <div className="space-y-2">
             <Label htmlFor="images" className="text-sm font-medium text-gray-700">
               Product Images <span className="text-rose-600">(At least 1, max 5)</span>
             </Label>
-            <Input
-              id="images"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
+            <Input 
+              id="images" 
+              type="file" 
+              accept="image/*" 
+              multiple 
+              onChange={handleImageChange} 
               className="border-rose-200 focus:border-rose-500 focus:ring-rose-500"
             />
             {imagePreviews.length > 0 && (
@@ -498,33 +588,28 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
                 {imagePreviews.map((preview, index) => (
                   <div key={index} className="relative group">
                     <div className="relative w-full h-24 bg-gray-100 rounded-md overflow-hidden border border-rose-200">
-                      <Image
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        fill
-                        className="object-cover"
+                      <Image 
+                        src={preview} 
+                        alt={`Preview ${index + 1}`} 
+                        fill 
+                        className="object-cover" 
                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 33vw"
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(index)}
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveImage(index)} 
                       className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600"
                     >
                       <X className="h-3 w-3" />
                     </button>
-                    {images.length + (imagePreviews.length - 1) >= 5 && (
-                      <div className="absolute bottom-1 left-1 bg-red-500 text-white text-xs px-1 rounded">
-                        Max
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
             )}
-            {imagePreviews.length < 5 && (
+            {imagePreviews.length < 7 && (
               <p className="text-xs text-gray-500 mt-1">
-                You can upload {5 - imagePreviews.length} more image{5 - imagePreviews.length !== 1 ? 's' : ''}
+                You can upload {7 - imagePreviews.length} more image{7 - imagePreviews.length !== 1 ? 's' : ''}
               </p>
             )}
           </div>
@@ -533,7 +618,17 @@ export function AddProduct({ onAddProduct }: AddProductProps) {
           <Button
             onClick={handleSubmit}
             className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={uploading || !formData.name || !formData.categoryId || !formData.brand || images.length === 0}
+            disabled={
+              uploading || 
+              !formData.name || 
+              !formData.categoryId || 
+              !formData.subcategoryId || 
+              !formData.brand || 
+              images.length === 0 ||
+              !variants[0]?.price ||
+              !variants[1]?.price ||
+              !variants[2]?.price
+            }
           >
             {uploading ? (
               <>

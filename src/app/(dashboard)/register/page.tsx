@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, ChangeEvent } from 'react';
 import Link from 'next/link';
-import { UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
+import { UserPlus, CheckCircle, AlertCircle, Upload, X } from 'lucide-react';
 
 const RegisterUI = () => {
   const [formData, setFormData] = useState({
@@ -14,13 +14,52 @@ const RegisterUI = () => {
     gstnumber: '',
     address: '',
   });
+  
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    
+    if (selectedFile) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(selectedFile.type)) {
+        setError('Please upload a valid image file (JPEG, PNG, GIF, WebP)');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setError('File size should be less than 5MB');
+        return;
+      }
+      
+      setFile(selectedFile);
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(selectedFile);
+      setPreview(previewUrl);
+      setError('');
+    }
+  };
+
+  const removeFile = () => {
+    setFile(null);
+    setPreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,29 +81,38 @@ const RegisterUI = () => {
       return;
     }
 
-    const payload = {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      password: formData.password,
-      gstnumber: formData.gstnumber || undefined,
-      address: formData.address,
-    };
+    // Create FormData object for multipart/form-data
+    const formDataToSend = new FormData();
+    
+    // Append text fields
+    formDataToSend.append('name', formData.name);
+    formDataToSend.append('email', formData.email);
+    formDataToSend.append('phone', formData.phone);
+    formDataToSend.append('password', formData.password);
+    formDataToSend.append('gstnumber', formData.gstnumber);
+    formDataToSend.append('address', formData.address);
+    
+    // Append file if exists
+    if (file) {
+      formDataToSend.append('file', file);
+    }
 
     try {
+      // Using FormData, so DON'T set Content-Type header
+      // The browser will set it automatically with the correct boundary
       const res = await fetch(
-        'https://barber-syndicate.vercel.app/api/v1/user/singup',
+        'https://4frnn03l-3000.inc1.devtunnels.ms/api/v1/user/singup',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          // No Content-Type header for FormData - let browser set it
+          body: formDataToSend,
         }
       );
 
       const data = await res.json();
-
+      console.log('Response data:', data);
       if (!res.ok) {
-        throw new Error(data?.message || 'Failed to register');
+        throw new Error(data?.message || data?.error || 'Failed to register');
       }
 
       // Save token to localStorage if provided
@@ -74,6 +122,8 @@ const RegisterUI = () => {
       }
 
       setSuccess('Registration successful! Awaiting admin approval.');
+      
+      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -83,6 +133,7 @@ const RegisterUI = () => {
         gstnumber: '',
         address: '',
       });
+      removeFile(); // Clear file input
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
@@ -131,7 +182,7 @@ const RegisterUI = () => {
                     id="name"
                     name="name"
                     type="text"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Enter your full name"
                     value={formData.name}
                     onChange={handleChange}
@@ -146,7 +197,7 @@ const RegisterUI = () => {
                     id="phone"
                     name="phone"
                     type="tel"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="+91 9876543210"
                     value={formData.phone}
                     onChange={handleChange}
@@ -164,7 +215,7 @@ const RegisterUI = () => {
                   id="email"
                   name="email"
                   type="email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={handleChange}
@@ -181,7 +232,7 @@ const RegisterUI = () => {
                   id="address"
                   name="address"
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Enter your complete business address"
                   value={formData.address}
                   onChange={handleChange}
@@ -198,7 +249,7 @@ const RegisterUI = () => {
                   id="gstnumber"
                   name="gstnumber"
                   type="text"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="e.g., 07AABCU9603R1ZX"
                   value={formData.gstnumber}
                   onChange={handleChange}
@@ -206,6 +257,62 @@ const RegisterUI = () => {
                 <p className="text-xs text-gray-500 mt-1">
                   Optional: Provide your GST number for tax-compliant invoices
                 </p>
+              </div>
+
+              {/* File Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Profile/Business Image
+                </label>
+                
+                {!preview ? (
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-500 transition-colors cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-gray-600 mb-1">
+                      Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG, GIF up to 5MB
+                    </p>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="border border-gray-300 rounded-lg p-4 flex items-center space-x-4">
+                      <div className="relative">
+                        <img 
+                          src={preview} 
+                          alt="Preview" 
+                          className="w-16 h-16 object-cover rounded-md"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeFile}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {file?.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {(file?.size! / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Password and Confirm Password */}
@@ -218,7 +325,7 @@ const RegisterUI = () => {
                     id="password"
                     name="password"
                     type="password"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Create a password"
                     value={formData.password}
                     onChange={handleChange}
@@ -234,7 +341,7 @@ const RegisterUI = () => {
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
@@ -253,7 +360,7 @@ const RegisterUI = () => {
               {/* Submit */}
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
                 {isLoading ? 'Creating Account...' : 'Create Account'}
